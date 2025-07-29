@@ -39,6 +39,24 @@ A modern web application for recording, analyzing, and sharing dreams with AI-po
 
 ### Local Development Setup
 
+#### Quick Setup (Recommended)
+
+**Windows:**
+```batch
+git clone https://github.com/jblacketter/newdreamflow.git
+cd newdreamflow
+setup_windows.bat
+```
+
+**macOS/Linux:**
+```bash
+git clone https://github.com/jblacketter/newdreamflow.git
+cd newdreamflow
+./setup_mac_linux.sh
+```
+
+#### Manual Setup
+
 1. **Clone the repository**
    ```bash
    git clone https://github.com/jblacketter/newdreamflow.git
@@ -46,9 +64,17 @@ A modern web application for recording, analyzing, and sharing dreams with AI-po
    ```
 
 2. **Create a virtual environment**
-   ```bash
+   
+   **Windows:**
+   ```batch
    python -m venv .venv
-   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+   .venv\Scripts\activate
+   ```
+   
+   **macOS/Linux:**
+   ```bash
+   python3 -m venv .venv
+   source .venv/bin/activate
    ```
 
 3. **Install dependencies**
