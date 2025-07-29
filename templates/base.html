@@ -1,0 +1,335 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}NewDreamFlow{% endblock %}</title>
+    
+    <!-- Alpine.js for interactivity -->
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    <!-- HTMX for dynamic updates -->
+    <script src="https://unpkg.com/htmx.org@1.9.11"></script>
+    
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Custom styles for themes -->
+    <style>
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f3f4f6;
+            --text-primary: #111827;
+            --text-secondary: #6b7280;
+            --accent: #8b5cf6;
+            --border-color: #e5e7eb;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Night Sky Theme - Dark and calming */
+        .theme-night {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --accent: #a78bfa;
+            --border-color: #334155;
+            --shadow-color: rgba(0, 0, 0, 0.3);
+        }
+        
+        /* Clouds Theme - Soft and dreamy */
+        .theme-clouds {
+            --bg-primary: #f0f9ff;
+            --bg-secondary: #e0f2fe;
+            --text-primary: #0c4a6e;
+            --text-secondary: #0369a1;
+            --accent: #7dd3fc;
+            --border-color: #bae6fd;
+            --shadow-color: rgba(56, 189, 248, 0.1);
+        }
+        
+        /* Twilight Theme - Purple and mystical */
+        .theme-twilight {
+            --bg-primary: #1e1b4b;
+            --bg-secondary: #312e81;
+            --text-primary: #e9d5ff;
+            --text-secondary: #c084fc;
+            --accent: #f3e8ff;
+            --border-color: #4c1d95;
+            --shadow-color: rgba(147, 51, 234, 0.3);
+        }
+        
+        /* Ocean Theme - Deep blue and serene */
+        .theme-ocean {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e3a5f;
+            --text-primary: #e0f2fe;
+            --text-secondary: #7dd3fc;
+            --accent: #38bdf8;
+            --border-color: #075985;
+            --shadow-color: rgba(14, 165, 233, 0.2);
+        }
+        
+        /* Forest Theme - Green and natural */
+        .theme-forest {
+            --bg-primary: #14532d;
+            --bg-secondary: #166534;
+            --text-primary: #d1fae5;
+            --text-secondary: #86efac;
+            --accent: #4ade80;
+            --border-color: #15803d;
+            --shadow-color: rgba(34, 197, 94, 0.2);
+        }
+        
+        /* Cosmic Theme - Space-inspired with gradients */
+        .theme-cosmic {
+            --bg-primary: #0a0118;
+            --bg-secondary: #1a0b2e;
+            --text-primary: #fbbf24;
+            --text-secondary: #f59e0b;
+            --accent: #fcd34d;
+            --border-color: #2d1b4e;
+            --shadow-color: rgba(251, 191, 36, 0.1);
+        }
+        
+        /* Additional theme styles */
+        body {
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        
+        .theme-twilight,
+        .theme-ocean,
+        .theme-forest,
+        .theme-cosmic {
+            background-image: 
+                radial-gradient(ellipse at top, rgba(147, 51, 234, 0.1), transparent),
+                radial-gradient(ellipse at bottom, rgba(59, 130, 246, 0.1), transparent);
+        }
+        
+        .theme-cosmic {
+            background-image: 
+                radial-gradient(circle at 20% 80%, rgba(251, 191, 36, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(147, 51, 234, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(59, 130, 246, 0.1) 0%, transparent 50%);
+        }
+        
+        .privacy-indicator-private {
+            background-color: #ef4444;
+        }
+        
+        .privacy-indicator-shared {
+            background-color: #10b981;
+        }
+        
+        .privacy-indicator-community {
+            background-color: #3b82f6;
+        }
+        
+        /* Enhanced styling for calming effect */
+        .bg-white, [style*="background-color: var(--bg-secondary)"] {
+            background-color: var(--bg-secondary) !important;
+            border-color: var(--border-color);
+        }
+        
+        .shadow, .shadow-sm, .shadow-lg {
+            box-shadow: 0 1px 3px 0 var(--shadow-color), 0 1px 2px 0 var(--shadow-color);
+        }
+        
+        .text-gray-700, .text-gray-600, .text-gray-500 {
+            color: var(--text-secondary);
+        }
+        
+        a {
+            color: var(--accent);
+        }
+        
+        input, textarea, select {
+            background-color: var(--bg-primary);
+            border-color: var(--border-color);
+            color: var(--text-primary);
+        }
+        
+        input:focus, textarea:focus, select:focus {
+            border-color: var(--accent);
+            outline-color: var(--accent);
+        }
+        
+        /* Smooth theme preview in profile */
+        .theme-preview {
+            width: 60px;
+            height: 40px;
+            border-radius: 8px;
+            border: 2px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .theme-preview::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 40%;
+            bottom: 0;
+            background-color: var(--bg-primary);
+        }
+        
+        .theme-preview::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 40%;
+            right: 0;
+            bottom: 0;
+            background-color: var(--bg-secondary);
+        }
+    </style>
+    
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="min-h-screen bg-gray-50 {% if user.is_authenticated %}theme-{{ user.theme }}{% endif %}" 
+      style="background-color: var(--bg-primary); color: var(--text-primary);">
+    
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm" style="background-color: var(--bg-secondary);">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex">
+                    <div class="flex-shrink-0 flex items-center">
+                        <h1 class="text-xl font-bold">🌙 NewDreamFlow</h1>
+                    </div>
+                    {% if user.is_authenticated %}
+                    <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
+                        <a href="{% url 'dreams:list' %}" class="border-transparent hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                            My Dreams
+                        </a>
+                        <a href="{% url 'dreams:create' %}" class="border-transparent hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                            New Dream
+                        </a>
+                        <a href="{% url 'patterns:dashboard' %}" class="border-transparent hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                            Patterns
+                        </a>
+                        <a href="{% url 'sharing:groups' %}" class="border-transparent hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                            Groups
+                        </a>
+                        <a href="{% url 'dreams:community' %}" class="border-transparent hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                            Community
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="flex items-center">
+                    {% if user.is_authenticated %}
+                        <div class="flex items-center space-x-3">
+                            <span class="text-sm text-gray-600">{{ user.username }}</span>
+                            <a href="{% url 'users:profile' %}" class="p-1 rounded-full hover:bg-gray-100" title="Profile">
+                                {% if user.dream_face %}
+                                    <img class="h-8 w-8 rounded-full" src="{{ user.dream_face.url }}" alt="{{ user.username }}">
+                                {% else %}
+                                    <div class="h-8 w-8 rounded-full bg-purple-500 flex items-center justify-center text-white text-sm font-semibold">
+                                        {{ user.username.0|upper }}
+                                    </div>
+                                {% endif %}
+                            </a>
+                            <form method="post" action="{% url 'logout' %}" class="inline">
+                                {% csrf_token %}
+                                <button type="submit" class="text-sm hover:text-gray-700">Logout</button>
+                            </form>
+                        </div>
+                    {% else %}
+                        <a href="{% url 'login' %}" class="text-sm font-medium hover:text-gray-700">Login</a>
+                        <a href="{% url 'register' %}" class="ml-4 text-sm font-medium hover:text-gray-700">Register</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        {% if messages %}
+        <div class="mb-4">
+            {% for message in messages %}
+            <div class="rounded-md p-4 mb-2 {% if message.tags == 'error' %}bg-red-50 text-red-800{% elif message.tags == 'success' %}bg-green-50 text-green-800{% else %}bg-blue-50 text-blue-800{% endif %}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        {% block content %}{% endblock %}
+    </main>
+    
+    <!-- Background Music Player (if enabled) -->
+    {% if user.is_authenticated and user.background_music != 'none' %}
+    {% load static %}
+    <div id="music-player" class="fixed bottom-4 right-4 z-50" x-data="{ playing: false, error: false }">
+        <audio id="bg-music" loop preload="auto">
+            <source src="{% static 'music/' %}{{ user.background_music }}.mp3" type="audio/mpeg">
+            <source src="{% static 'music/' %}{{ user.background_music }}.ogg" type="audio/ogg">
+            <source src="{% static 'music/' %}{{ user.background_music }}.wav" type="audio/wav">
+        </audio>
+        <button @click="toggleMusic()" 
+                class="bg-purple-500 text-white p-3 rounded-full shadow-lg hover:bg-purple-600 transition-all duration-300 transform hover:scale-110"
+                :class="{ 'bg-red-500 hover:bg-red-600': error }"
+                :title="error ? 'Music file not found' : (playing ? 'Pause music' : 'Play music')">
+            <span x-show="!playing && !error">🎵</span>
+            <span x-show="playing && !error">⏸️</span>
+            <span x-show="error">❌</span>
+        </button>
+    </div>
+    <script>
+        const audio = document.getElementById('bg-music');
+        audio.volume = {{ user.music_volume }} / 100;
+        
+        function toggleMusic() {
+            const player = document.querySelector('#music-player');
+            const alpine = player._x_dataStack[0];
+            
+            if (audio.paused) {
+                audio.play().then(() => {
+                    alpine.playing = true;
+                    alpine.error = false;
+                    localStorage.setItem('musicPlaying', 'true');
+                }).catch(error => {
+                    console.error('Error playing audio:', error);
+                    alpine.error = true;
+                    alpine.playing = false;
+                    // Try to load a test file
+                    console.log('Audio source:', audio.currentSrc);
+                    console.log('Music file should be at: /static/music/{{ user.background_music }}.mp3');
+                });
+            } else {
+                audio.pause();
+                alpine.playing = false;
+                localStorage.setItem('musicPlaying', 'false');
+            }
+        }
+        
+        // Check if audio file can be loaded
+        audio.addEventListener('error', function(e) {
+            const player = document.querySelector('#music-player');
+            if (player._x_dataStack) {
+                player._x_dataStack[0].error = true;
+            }
+            console.error('Audio loading error:', e);
+            console.log('Failed to load:', audio.currentSrc);
+        });
+        
+        // Check if music should auto-play
+        document.addEventListener('DOMContentLoaded', function() {
+            if (localStorage.getItem('musicPlaying') === 'true') {
+                audio.play().catch(e => console.log('Auto-play prevented by browser'));
+                const player = document.querySelector('#music-player');
+                if (player._x_dataStack) {
+                    player._x_dataStack[0].playing = true;
+                }
+            }
+        });
+    </script>
+    {% endif %}
+    
+    {% block extra_body %}{% endblock %}
+</body>
+</html>

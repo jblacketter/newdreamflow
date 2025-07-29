@@ -1,0 +1,219 @@
+{% extends 'base.html' %}
+
+{% block title %}Dream Groups - NewDreamFlow{% endblock %}
+
+{% block content %}
+<div class="px-4 py-5 sm:px-6" x-data="{ activeTab: 'my-groups' }">
+    <div class="mb-6 flex justify-between items-center">
+        <h1 class="text-2xl font-bold">Dream Sharing Groups</h1>
+        <button onclick="showCreateGroupModal()" 
+                class="bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 transition">
+            Create New Group
+        </button>
+    </div>
+    
+    <!-- Tabs -->
+    <div class="border-b border-gray-200 mb-6">
+        <nav class="-mb-px flex space-x-8">
+            <button @click="activeTab = 'my-groups'" 
+                    :class="activeTab === 'my-groups' ? 'border-purple-500 text-purple-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                    class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                My Groups
+            </button>
+            <button @click="activeTab = 'discover'" 
+                    :class="activeTab === 'discover' ? 'border-purple-500 text-purple-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                    class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                Discover Groups
+            </button>
+            <button @click="activeTab = 'invitations'" 
+                    :class="activeTab === 'invitations' ? 'border-purple-500 text-purple-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                    class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                Invitations <span class="ml-1 bg-red-500 text-white text-xs rounded-full px-2">{{ pending_invitations|default:0 }}</span>
+            </button>
+        </nav>
+    </div>
+    
+    <!-- Content Sections -->
+    <div>
+        <!-- My Groups -->
+        <div x-show="activeTab === 'my-groups'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% if user_groups %}
+                {% for membership in user_groups %}
+                <div class="bg-white rounded-lg shadow hover:shadow-lg transition" style="background-color: var(--bg-secondary);">
+                    <div class="p-6">
+                        <div class="flex justify-between items-start mb-3">
+                            <h3 class="text-lg font-semibold">{{ membership.group.name }}</h3>
+                            <span class="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full">
+                                {{ membership.get_role_display }}
+                            </span>
+                        </div>
+                        
+                        <p class="text-gray-600 text-sm mb-4">{{ membership.group.description|truncatewords:20 }}</p>
+                        
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-gray-500">
+                                {{ membership.group.members.count }} member{{ membership.group.members.count|pluralize }}
+                            </span>
+                            <a href="{% url 'sharing:group_dreams' membership.group.pk %}" class="text-purple-600 hover:text-purple-800">
+                                View Dreams →
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-50 px-6 py-3 flex justify-between items-center" style="background-color: var(--bg-primary);">
+                        <div class="flex items-center space-x-4">
+                            <span class="text-xs text-gray-500">
+                                Joined {{ membership.joined_at|timesince }} ago
+                            </span>
+                            {% if membership.role in 'admin,moderator' %}
+                            <a href="{% url 'sharing:invite_to_group' membership.group.pk %}" class="text-xs text-purple-600 hover:text-purple-800">
+                                Invite Members
+                            </a>
+                            {% endif %}
+                        </div>
+                        {% if membership.group.is_private %}
+                        <span class="text-xs text-gray-600">
+                            <svg class="w-3 h-3 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/>
+                            </svg>
+                            Private
+                        </span>
+                        {% else %}
+                        <span class="text-xs text-gray-600">
+                            <svg class="w-3 h-3 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/>
+                                <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/>
+                            </svg>
+                            Public
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="col-span-full">
+                    <div class="bg-white rounded-lg shadow p-12 text-center" style="background-color: var(--bg-secondary);">
+                        <div class="text-5xl mb-4">👥</div>
+                        <h3 class="text-xl font-semibold mb-2">No groups yet</h3>
+                        <p class="text-gray-600 mb-4">Join a group to share dreams with others!</p>
+                        <button onclick="showCreateGroupModal()" 
+                                class="bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 transition">
+                            Create Your First Group
+                        </button>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Discover Groups -->
+        <div x-show="activeTab === 'discover'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% if public_groups %}
+                {% for group in public_groups %}
+                <div class="bg-white rounded-lg shadow hover:shadow-lg transition" style="background-color: var(--bg-secondary);">
+                    <div class="p-6">
+                        <h3 class="text-lg font-semibold mb-2">{{ group.name }}</h3>
+                        <p class="text-gray-600 text-sm mb-4">{{ group.description|truncatewords:20 }}</p>
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-gray-500">
+                                {{ group.members.count }} member{{ group.members.count|pluralize }}
+                            </span>
+                            <button class="bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700 transition text-sm">
+                                Join Group
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="col-span-full">
+                    <div class="bg-white rounded-lg shadow p-12 text-center" style="background-color: var(--bg-secondary);">
+                        <div class="text-5xl mb-4">🔍</div>
+                        <h3 class="text-xl font-semibold mb-2">No public groups available</h3>
+                        <p class="text-gray-600">All groups are currently private. Create your own or wait for invitations!</p>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Invitations -->
+        <div x-show="activeTab === 'invitations'" class="space-y-4">
+            <div class="bg-white rounded-lg shadow p-6" style="background-color: var(--bg-secondary);">
+                <div class="text-center py-8">
+                    <div class="text-5xl mb-4">📮</div>
+                    <h3 class="text-xl font-semibold mb-2">No invitations yet</h3>
+                    <p class="text-gray-600">When someone invites you to join their group, it will appear here.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Group Modal (Hidden by default) -->
+<div id="createGroupModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <h3 class="text-lg font-bold text-gray-900 mb-4">Create New Group</h3>
+        
+        <form method="post" action="{% url 'sharing:groups' %}">
+            {% csrf_token %}
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Group Name</label>
+                    <input type="text" name="name" required
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-purple-500 focus:border-purple-500">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <textarea name="description" rows="3"
+                              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-purple-500 focus:border-purple-500"></textarea>
+                </div>
+                
+                <div>
+                    <label class="flex items-center">
+                        <input type="checkbox" name="is_private" checked
+                               class="rounded border-gray-300 text-purple-600 focus:ring-purple-500">
+                        <span class="ml-2 text-sm text-gray-700">Private group (invite only)</span>
+                    </label>
+                </div>
+                
+                <div>
+                    <label class="flex items-center">
+                        <input type="checkbox" name="requires_approval"
+                               class="rounded border-gray-300 text-purple-600 focus:ring-purple-500">
+                        <span class="ml-2 text-sm text-gray-700">Require approval for new members</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="mt-6 flex justify-end space-x-3">
+                <button type="button" onclick="hideCreateGroupModal()"
+                        class="bg-gray-200 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-300 transition">
+                    Cancel
+                </button>
+                <button type="submit"
+                        class="bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 transition">
+                    Create Group
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function showCreateGroupModal() {
+    document.getElementById('createGroupModal').classList.remove('hidden');
+}
+
+function hideCreateGroupModal() {
+    document.getElementById('createGroupModal').classList.add('hidden');
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    const modal = document.getElementById('createGroupModal');
+    if (event.target == modal) {
+        hideCreateGroupModal();
+    }
+}
+</script>
+{% endblock %}

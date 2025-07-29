@@ -1,0 +1,181 @@
+{% extends 'base.html' %}
+
+{% block title %}Profile - NewDreamFlow{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-5">
+    <h1 class="text-2xl font-bold mb-6">My Profile</h1>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Profile Picture & Stats -->
+        <div class="lg:col-span-1">
+            <div class="bg-white rounded-lg shadow p-6 text-center" style="background-color: var(--bg-secondary);">
+                <!-- Dream Face -->
+                <div class="mb-4">
+                    {% if user.dream_face %}
+                        <img src="{{ user.dream_face.url }}" alt="{{ user.username }}" 
+                             class="w-32 h-32 rounded-full mx-auto object-cover">
+                    {% else %}
+                        <div class="w-32 h-32 rounded-full mx-auto bg-purple-500 flex items-center justify-center text-white text-4xl">
+                            {{ user.username.0|upper }}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <h2 class="text-xl font-semibold mb-1">{{ user.username }}</h2>
+                <p class="text-gray-600 text-sm mb-4">{{ user.email }}</p>
+                
+                <!-- Stats -->
+                <div class="border-t pt-4 space-y-2">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-600">Total Dreams:</span>
+                        <span class="font-semibold">{{ user.dreams.count }}</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-600">Groups:</span>
+                        <span class="font-semibold">{{ user.dream_groups.count }}</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-600">Member Since:</span>
+                        <span class="font-semibold">{{ user.created_at|date:"M Y" }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Profile Form -->
+        <div class="lg:col-span-2">
+            <div class="bg-white rounded-lg shadow p-6" style="background-color: var(--bg-secondary);">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    {% if form.non_field_errors %}
+                    <div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
+                        {{ form.non_field_errors }}
+                    </div>
+                    {% endif %}
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <!-- Basic Info -->
+                        <div>
+                            <label for="{{ form.first_name.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                                First Name
+                            </label>
+                            {{ form.first_name }}
+                            {% if form.first_name.errors %}
+                                <p class="mt-1 text-sm text-red-600">{{ form.first_name.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        
+                        <div>
+                            <label for="{{ form.last_name.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                                Last Name
+                            </label>
+                            {{ form.last_name }}
+                            {% if form.last_name.errors %}
+                                <p class="mt-1 text-sm text-red-600">{{ form.last_name.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="md:col-span-2">
+                            <label for="{{ form.email.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                                Email
+                            </label>
+                            {{ form.email }}
+                            {% if form.email.errors %}
+                                <p class="mt-1 text-sm text-red-600">{{ form.email.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Dream Face -->
+                    <div class="mb-6">
+                        <label for="{{ form.dream_face.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                            Dream Face (Avatar)
+                        </label>
+                        {{ form.dream_face }}
+                        {% if form.dream_face.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.dream_face.errors.0 }}</p>
+                        {% endif %}
+                        <p class="mt-1 text-xs text-gray-500">This avatar will be shown on your shared dreams.</p>
+                    </div>
+                    
+                    <hr class="my-6">
+                    
+                    <!-- Theme Preferences -->
+                    <h3 class="text-lg font-semibold mb-4">Theme & Experience</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <div>
+                            <label for="{{ form.theme.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                                Visual Theme
+                            </label>
+                            {{ form.theme }}
+                            {% if form.theme.errors %}
+                                <p class="mt-1 text-sm text-red-600">{{ form.theme.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        
+                        <div>
+                            <label for="{{ form.background_music.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                                Background Music
+                            </label>
+                            {{ form.background_music }}
+                            {% if form.background_music.errors %}
+                                <p class="mt-1 text-sm text-red-600">{{ form.background_music.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-6" x-data="{ volume: {{ form.music_volume.value|default:50 }} }">
+                        <label for="{{ form.music_volume.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                            Music Volume: <span x-text="volume" class="font-bold text-purple-600"></span>%
+                        </label>
+                        <input type="range" name="music_volume" id="{{ form.music_volume.id_for_label }}"
+                               min="0" max="100" x-model="volume" value="{{ form.music_volume.value|default:50 }}"
+                               class="w-full">
+                        {% if form.music_volume.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.music_volume.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <hr class="my-6">
+                    
+                    <!-- Privacy Settings -->
+                    <h3 class="text-lg font-semibold mb-4">Privacy Settings</h3>
+                    
+                    <div class="mb-6">
+                        <label for="{{ form.default_privacy.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                            Default Privacy for New Dreams
+                        </label>
+                        {{ form.default_privacy }}
+                        {% if form.default_privacy.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.default_privacy.errors.0 }}</p>
+                        {% endif %}
+                        <p class="mt-1 text-xs text-gray-500">This will be the default privacy setting when you create new dreams.</p>
+                    </div>
+                    
+                    <!-- Submit -->
+                    <div class="flex justify-end">
+                        <button type="submit" class="bg-purple-600 text-white py-2 px-6 rounded-md hover:bg-purple-700 transition">
+                            Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Danger Zone -->
+    <div class="mt-8 bg-red-50 rounded-lg p-6">
+        <h3 class="text-lg font-semibold text-red-900 mb-2">Danger Zone</h3>
+        <p class="text-sm text-red-700 mb-4">
+            Deleting your account will permanently remove all your dreams, patterns, and group memberships.
+        </p>
+        <a href="{% url 'users:delete_account' %}" 
+           class="inline-block bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 transition text-sm">
+            Delete Account
+        </a>
+    </div>
+</div>
+{% endblock %}

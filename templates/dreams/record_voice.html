@@ -1,0 +1,265 @@
+{% extends 'base.html' %}
+
+{% block title %}Record Dream - NewDreamFlow{% endblock %}
+
+{% block extra_head %}
+<style>
+    .recording-wave {
+        animation: pulse 1.5s ease-in-out infinite;
+    }
+    
+    @keyframes pulse {
+        0% { opacity: 0.3; transform: scale(0.8); }
+        50% { opacity: 1; transform: scale(1.2); }
+        100% { opacity: 0.3; transform: scale(0.8); }
+    }
+    
+    .audio-visualizer {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        height: 60px;
+    }
+    
+    .audio-bar {
+        width: 4px;
+        background-color: #8b5cf6;
+        animation: wave 1s ease-in-out infinite;
+    }
+    
+    .audio-bar:nth-child(1) { animation-delay: 0s; height: 20px; }
+    .audio-bar:nth-child(2) { animation-delay: 0.1s; height: 30px; }
+    .audio-bar:nth-child(3) { animation-delay: 0.2s; height: 40px; }
+    .audio-bar:nth-child(4) { animation-delay: 0.3s; height: 30px; }
+    .audio-bar:nth-child(5) { animation-delay: 0.4s; height: 20px; }
+    
+    @keyframes wave {
+        0%, 100% { height: 20px; }
+        50% { height: 40px; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto px-4 py-5">
+    <div class="bg-white rounded-lg shadow-lg p-6" style="background-color: var(--bg-secondary);">
+        <h1 class="text-2xl font-bold mb-6 text-center">Voice Record Your Dream</h1>
+        
+        <div x-data="voiceRecorder()" x-init="init()">
+            <!-- Recording Status -->
+            <div class="text-center mb-8">
+                <div x-show="!isRecording && !audioBlob" class="space-y-4">
+                    <div class="text-6xl">🎙️</div>
+                    <p class="text-gray-600">Click the button below to start recording your dream</p>
+                </div>
+                
+                <div x-show="isRecording" class="space-y-4">
+                    <div class="text-6xl recording-wave">🔴</div>
+                    <div class="audio-visualizer">
+                        <div class="audio-bar"></div>
+                        <div class="audio-bar"></div>
+                        <div class="audio-bar"></div>
+                        <div class="audio-bar"></div>
+                        <div class="audio-bar"></div>
+                    </div>
+                    <p class="text-red-600 font-semibold">Recording... <span x-text="recordingTime"></span></p>
+                </div>
+                
+                <div x-show="audioBlob && !isRecording" class="space-y-4">
+                    <div class="text-6xl">✅</div>
+                    <p class="text-green-600 font-semibold">Recording complete!</p>
+                    <audio x-ref="audioPlayback" controls class="w-full mt-4"></audio>
+                </div>
+            </div>
+            
+            <!-- Control Buttons -->
+            <div class="flex justify-center space-x-4 mb-6">
+                <button @click="toggleRecording()" 
+                        :class="isRecording ? 'bg-red-600 hover:bg-red-700' : 'bg-purple-600 hover:bg-purple-700'"
+                        class="text-white py-3 px-6 rounded-md transition flex items-center space-x-2">
+                    <span x-show="!isRecording && !audioBlob">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
+                        </svg>
+                    </span>
+                    <span x-show="isRecording">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"></path>
+                        </svg>
+                    </span>
+                    <span x-text="isRecording ? 'Stop Recording' : (audioBlob ? 'Record Again' : 'Start Recording')"></span>
+                </button>
+                
+                <button x-show="audioBlob && !isRecording" 
+                        @click="saveDream()"
+                        class="bg-green-600 text-white py-3 px-6 rounded-md hover:bg-green-700 transition flex items-center space-x-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    <span>Save Dream</span>
+                </button>
+            </div>
+            
+            <!-- Quick Form Fields -->
+            <div x-show="audioBlob && !isRecording" class="space-y-4 border-t pt-4">
+                <h3 class="font-semibold text-lg mb-3">Add Details (Optional)</h3>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                    <input type="text" x-model="dreamTitle" 
+                           placeholder="Give your dream a title"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-purple-500 focus:border-purple-500">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Mood</label>
+                    <input type="text" x-model="dreamMood" 
+                           placeholder="How did the dream feel?"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-purple-500 focus:border-purple-500">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Tags</label>
+                    <input type="text" x-model="dreamTags" 
+                           placeholder="Enter tags separated by commas"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-purple-500 focus:border-purple-500">
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Instructions -->
+    <div class="mt-6 bg-purple-50 rounded-lg p-4">
+        <h3 class="font-semibold text-purple-900 mb-2">🎤 Voice Recording Tips</h3>
+        <ul class="text-sm text-purple-700 space-y-1">
+            <li>• Find a quiet place to record</li>
+            <li>• Speak clearly and at a steady pace</li>
+            <li>• Include as many details as you can remember</li>
+            <li>• You can pause and continue - the AI will understand</li>
+            <li>• Recording will be automatically transcribed</li>
+        </ul>
+    </div>
+</div>
+
+<script>
+function voiceRecorder() {
+    return {
+        isRecording: false,
+        audioBlob: null,
+        mediaRecorder: null,
+        audioChunks: [],
+        recordingTime: '0:00',
+        startTime: null,
+        timerInterval: null,
+        dreamTitle: '',
+        dreamMood: '',
+        dreamTags: '',
+        
+        init() {
+            // Check for browser support
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                alert('Your browser does not support audio recording.');
+            }
+        },
+        
+        async toggleRecording() {
+            if (this.isRecording) {
+                this.stopRecording();
+            } else {
+                await this.startRecording();
+            }
+        },
+        
+        async startRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                this.mediaRecorder = new MediaRecorder(stream);
+                this.audioChunks = [];
+                
+                this.mediaRecorder.ondataavailable = (event) => {
+                    this.audioChunks.push(event.data);
+                };
+                
+                this.mediaRecorder.onstop = () => {
+                    const audioBlob = new Blob(this.audioChunks, { type: 'audio/wav' });
+                    this.audioBlob = audioBlob;
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    this.$refs.audioPlayback.src = audioUrl;
+                };
+                
+                this.mediaRecorder.start();
+                this.isRecording = true;
+                this.startTime = Date.now();
+                this.startTimer();
+                
+            } catch (error) {
+                console.error('Error accessing microphone:', error);
+                alert('Could not access microphone. Please check permissions.');
+            }
+        },
+        
+        stopRecording() {
+            if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+                this.mediaRecorder.stop();
+                this.mediaRecorder.stream.getTracks().forEach(track => track.stop());
+                this.isRecording = false;
+                this.stopTimer();
+            }
+        },
+        
+        startTimer() {
+            this.timerInterval = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
+                const minutes = Math.floor(elapsed / 60);
+                const seconds = elapsed % 60;
+                this.recordingTime = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            }, 1000);
+        },
+        
+        stopTimer() {
+            if (this.timerInterval) {
+                clearInterval(this.timerInterval);
+                this.timerInterval = null;
+            }
+        },
+        
+        async saveDream() {
+            if (!this.audioBlob) return;
+            
+            const formData = new FormData();
+            formData.append('voice_recording', this.audioBlob, 'dream_recording.wav');
+            formData.append('title', this.dreamTitle);
+            formData.append('mood', this.dreamMood);
+            formData.append('tags', this.dreamTags);
+            formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+            
+            try {
+                const response = await fetch('{% url "dreams:record_voice" %}', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.redirect_url) {
+                        window.location.href = data.redirect_url;
+                    } else {
+                        window.location.href = '{% url "dreams:list" %}';
+                    }
+                } else {
+                    alert('Error saving dream. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error saving dream:', error);
+                alert('Error saving dream. Please try again.');
+            }
+        }
+    }
+}
+</script>
+
+<!-- CSRF Token for AJAX -->
+{% csrf_token %}
+{% endblock %}

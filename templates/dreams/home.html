@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+
+{% block title %}Home - NewDreamFlow{% endblock %}
+
+{% block content %}
+<div class="px-4 py-5 sm:px-6">
+    {% if user.is_authenticated %}
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold mb-2">Welcome back, {{ user.username }}!</h1>
+            <p class="text-gray-600">You have recorded {{ total_dreams }} dream{{ total_dreams|pluralize }}.</p>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Quick Actions -->
+            <div class="bg-white rounded-lg shadow p-6" style="background-color: var(--bg-secondary);">
+                <h2 class="text-xl font-semibold mb-4">Quick Actions</h2>
+                <div class="space-y-3">
+                    <a href="{% url 'dreams:create' %}" class="block w-full text-center bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 transition">
+                        Record New Dream
+                    </a>
+                    <a href="{% url 'dreams:record_voice' %}" class="block w-full text-center bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 transition">
+                        Voice Record Dream
+                    </a>
+                    <a href="{% url 'patterns:dashboard' %}" class="block w-full text-center bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition">
+                        View Patterns
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Recent Dreams -->
+            <div class="bg-white rounded-lg shadow p-6" style="background-color: var(--bg-secondary);">
+                <h2 class="text-xl font-semibold mb-4">Recent Dreams</h2>
+                {% if recent_dreams %}
+                    <div class="space-y-3">
+                        {% for dream in recent_dreams %}
+                        <div class="border-b pb-2">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <a href="{% url 'dreams:detail' dream.pk %}" class="text-purple-600 hover:text-purple-800 font-medium">
+                                        {{ dream.title|default:"Untitled Dream" }}
+                                    </a>
+                                    <p class="text-sm text-gray-500">{{ dream.dream_date }}</p>
+                                </div>
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium 
+                                    {% if dream.privacy_level == 'private' %}privacy-indicator-private text-white{% elif dream.privacy_level == 'community' %}privacy-indicator-community text-white{% else %}privacy-indicator-shared text-white{% endif %}">
+                                    {{ dream.get_privacy_level_display }}
+                                </span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <a href="{% url 'dreams:list' %}" class="block mt-4 text-center text-purple-600 hover:text-purple-800">
+                        View All Dreams →
+                    </a>
+                {% else %}
+                    <p class="text-gray-500">No dreams recorded yet. Start by recording your first dream!</p>
+                {% endif %}
+            </div>
+        </div>
+    {% else %}
+        <!-- Landing page for non-authenticated users -->
+        <div class="text-center py-12">
+            <h1 class="text-4xl font-bold mb-4">NewDreamFlow</h1>
+            <p class="text-xl text-gray-600 mb-8">
+                Discover patterns in your dreams with AI-powered analysis
+            </p>
+            
+            <div class="max-w-2xl mx-auto mb-12">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-white p-6 rounded-lg shadow" style="background-color: var(--bg-secondary);">
+                        <div class="text-3xl mb-3">🎙️</div>
+                        <h3 class="font-semibold mb-2">Voice Recording</h3>
+                        <p class="text-sm text-gray-600">Record dreams instantly with voice</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow" style="background-color: var(--bg-secondary);">
+                        <div class="text-3xl mb-3">🔍</div>
+                        <h3 class="font-semibold mb-2">Pattern Analysis</h3>
+                        <p class="text-sm text-gray-600">AI identifies recurring themes</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow" style="background-color: var(--bg-secondary);">
+                        <div class="text-3xl mb-3">🔒</div>
+                        <h3 class="font-semibold mb-2">Privacy First</h3>
+                        <p class="text-sm text-gray-600">Your dreams are private by default</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="space-x-4">
+                <a href="{% url 'register' %}" class="inline-block bg-purple-600 text-white py-3 px-6 rounded-md hover:bg-purple-700 transition">
+                    Get Started
+                </a>
+                <a href="{% url 'login' %}" class="inline-block bg-gray-200 text-gray-800 py-3 px-6 rounded-md hover:bg-gray-300 transition">
+                    Login
+                </a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
