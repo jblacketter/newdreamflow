@@ -9,6 +9,7 @@ from django.utils import timezone
 from .models import Dream, DreamTag, DreamImage
 from .forms import DreamForm, DreamImageFormSet
 from .services.ai_service import ai_service
+from .services.semantic_service import semantic_service
 import json
 
 
@@ -77,9 +78,15 @@ def dream_detail(request, pk):
                 messages.error(request, "You don't have permission to view this dream.")
                 return redirect('dreams:list')
     
+    # Generate semantic HTML for the description
+    semantic_html = None
+    if dream.description:
+        semantic_html = semantic_service.create_highlighted_html(dream.description)
+    
     context = {
         'dream': dream,
         'can_edit': dream.user == request.user,
+        'semantic_html': semantic_html,
     }
     return render(request, 'dreams/dream_detail.html', context)
 
@@ -115,6 +122,13 @@ def dream_create(request):
                 dream.themes = analysis.get('themes', [])
                 dream.symbols = analysis.get('symbols', [])
                 dream.entities = analysis.get('entities', [])
+                
+                # Semantic bit analysis
+                semantic_analysis = semantic_service.extract_semantic_bits(dream_text)
+                dream.semantic_verbs = semantic_analysis.get('verbs', [])
+                dream.semantic_nouns = semantic_analysis.get('nouns', [])
+                dream.semantic_bits = semantic_analysis
+                
                 dream.save()
             
             messages.success(request, 'Dream recorded successfully!')
@@ -163,6 +177,13 @@ def dream_edit(request, pk):
                     dream.themes = analysis.get('themes', [])
                     dream.symbols = analysis.get('symbols', [])
                     dream.entities = analysis.get('entities', [])
+                    
+                    # Semantic bit analysis
+                    semantic_analysis = semantic_service.extract_semantic_bits(dream_text)
+                    dream.semantic_verbs = semantic_analysis.get('verbs', [])
+                    dream.semantic_nouns = semantic_analysis.get('nouns', [])
+                    dream.semantic_bits = semantic_analysis
+                    
                     dream.save()
             
             messages.success(request, 'Dream updated successfully!')

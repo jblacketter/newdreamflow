@@ -85,6 +85,23 @@ class Dream(models.Model):
         help_text="People, places, objects in the dream"
     )
     
+    # Semantic Analysis
+    semantic_verbs = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="Extracted verbs from the description"
+    )
+    semantic_nouns = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="Extracted nouns from the description"
+    )
+    semantic_bits = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Full semantic analysis including all POS tags"
+    )
+    
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
