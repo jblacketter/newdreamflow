@@ -111,9 +111,11 @@ class DreamImageForm(forms.ModelForm):
         image = cleaned_data.get('image')
         image_url = cleaned_data.get('image_url')
         
+        # Both empty is OK (the form will be ignored)
         if not image and not image_url:
-            raise forms.ValidationError('Please provide either an image file or an image URL.')
+            return cleaned_data
         
+        # Both filled is not OK
         if image and image_url:
             raise forms.ValidationError('Please provide either an image file or an image URL, not both.')
         
@@ -125,7 +127,7 @@ DreamImageFormSet = inlineformset_factory(
     Dream, 
     DreamImage,
     form=DreamImageForm,
-    extra=3,
+    extra=1,  # Just show 1 field by default
     can_delete=True,
     max_num=9  # Maximum 9 images for 3x3 grid
 )
