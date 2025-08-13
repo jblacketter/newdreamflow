@@ -25,7 +25,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', dream_views.home, name='home'),
     path('register/', user_views.register, name='register'),
-    path('dreams/', include('apps.dreams.urls', namespace='dreams')),
+    path('things/', include('apps.dreams.urls', namespace='dreams')),
     path('patterns/', include('apps.patterns.urls', namespace='patterns')),
     path('sharing/', include('apps.sharing.urls', namespace='sharing')),
     path('users/', include('apps.users.urls', namespace='users')),

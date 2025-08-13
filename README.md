@@ -87,7 +87,7 @@ cd newdreamflow
    cp .env.example .env
    # Edit .env with your configuration
    ```
-
+1
 5. **Run migrations**
    ```bash
    python manage.py migrate

@@ -21,12 +21,12 @@ class DreamForm(forms.ModelForm):
         widgets = {
             'title': forms.TextInput(attrs={
                 'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-purple-500 focus:border-purple-500',
-                'placeholder': 'Give your dream a title (optional)'
+                'placeholder': 'Give your thing a title (optional)'
             }),
             'description': forms.Textarea(attrs={
                 'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-purple-500 focus:border-purple-500',
                 'rows': 6,
-                'placeholder': 'Describe your dream in detail...'
+                'placeholder': 'Describe your thing in detail...'
             }),
             'dream_date': forms.DateInput(attrs={
                 'type': 'date',
@@ -34,7 +34,7 @@ class DreamForm(forms.ModelForm):
             }),
             'mood': forms.TextInput(attrs={
                 'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-purple-500 focus:border-purple-500',
-                'placeholder': 'How did the dream feel? (e.g., peaceful, anxious, exciting)'
+                'placeholder': 'How did the thing feel? (e.g., peaceful, anxious, exciting)'
             }),
             'lucidity_level': forms.NumberInput(attrs={
                 'type': 'range',

@@ -1,18 +1,18 @@
 {% extends 'base.html' %}
 
-{% block title %}My Things{% endblock %}
+{% block title %}My Dreams - NewDreamFlow{% endblock %}
 
 {% block content %}
 <div class="px-4 py-5 sm:px-6">
     <div class="mb-6">
-        <h1 class="text-2xl font-bold mb-4">My Things</h1>
+        <h1 class="text-2xl font-bold mb-4">My Dreams</h1>
         
         <!-- Search and Filter Bar -->
         <div class="bg-white rounded-lg shadow p-4 mb-4" style="background-color: var(--bg-secondary);">
             <form method="get" class="flex flex-wrap gap-4">
                 <div class="flex-1 min-w-[200px]">
                     <input type="text" name="search" value="{{ search_query }}" 
-                           placeholder="Search things..." 
+                           placeholder="Search dreams..." 
                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-purple-500 focus:border-purple-500">
                 </div>
                 <div>
@@ -36,7 +36,7 @@
         </div>
     </div>
     
-    <!-- Things List -->
+    <!-- Dreams List -->
     {% if page_obj.object_list %}
         <div class="space-y-4">
             {% for dream in page_obj %}
@@ -45,7 +45,7 @@
                     <div class="flex-1">
                         <h2 class="text-xl font-semibold mb-1">
                             <a href="{% url 'dreams:detail' dream.pk %}" class="text-purple-600 hover:text-purple-800">
-                                {{ dream.title|default:"Untitled Thing" }}
+                                {{ dream.title|default:"Untitled Dream" }}
                             </a>
                         </h2>
                         <p class="text-sm text-gray-500">{{ dream.dream_date }} • Lucidity: {{ dream.lucidity_level }}/10</p>

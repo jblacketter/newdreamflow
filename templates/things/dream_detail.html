@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}{{ dream.title|default:"Thing" }}{% endblock %}
+{% block title %}{{ dream.title|default:"Dream" }} - NewDreamFlow{% endblock %}
 
 {% block extra_head %}
 <style>
@@ -105,7 +105,7 @@
         <div class="p-6 border-b border-gray-200">
             <div class="flex justify-between items-start">
                 <div class="flex-1">
-                    <h1 class="text-2xl font-bold mb-2">{{ dream.title|default:"Untitled Thing" }}</h1>
+                    <h1 class="text-2xl font-bold mb-2">{{ dream.title|default:"Untitled Dream" }}</h1>
                     <div class="flex items-center space-x-4 text-sm text-gray-600">
                         <span>{{ dream.dream_date }}</span>
                         <span>•</span>
@@ -174,7 +174,7 @@
             
             <!-- Description -->
             <div class="mb-6">
-                <h3 class="text-lg font-semibold mb-2">Thing Description</h3>
+                <h3 class="text-lg font-semibold mb-2">Dream Description</h3>
                 <div class="prose max-w-none text-gray-700" style="color: var(--text-primary);">
                     {{ dream.description|linebreaks }}
                 </div>
@@ -245,15 +245,15 @@
             </div>
             {% endif %}
             
-            <!-- Thing Images -->
+            <!-- Dream Images -->
             {% if dream.images.exists %}
             <div class="mb-6">
-                <h3 class="text-lg font-semibold mb-3">Thing Images</h3>
+                <h3 class="text-lg font-semibold mb-3">Dream Images</h3>
                 <div class="image-grid">
                     {% for image in dream.images.all %}
                     <div class="image-item">
                         <img src="{{ image.get_image_url }}" 
-                             alt="{{ image.caption|default:'Thing image' }}"
+                             alt="{{ image.caption|default:'Dream image' }}"
                              data-caption="{{ image.caption }}"
                              onclick="openImageModal(this)">
                     </div>
@@ -303,7 +303,7 @@
     <!-- Back Button -->
     <div class="mt-6">
         <a href="{% url 'dreams:list' %}" class="text-purple-600 hover:text-purple-800">
-            ← Back to Things
+            ← Back to Dreams
         </a>
     </div>
 </div>
