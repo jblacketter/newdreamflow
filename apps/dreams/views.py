@@ -6,8 +6,8 @@ from django.http import JsonResponse
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.utils import timezone
-from .models import Dream, DreamTag
-from .forms import DreamForm
+from .models import Dream, DreamTag, DreamImage
+from .forms import DreamForm, DreamImageFormSet
 from .services.ai_service import ai_service
 import json
 
@@ -89,11 +89,17 @@ def dream_create(request):
     """Create a new dream."""
     if request.method == 'POST':
         form = DreamForm(request.POST, request.FILES)
-        if form.is_valid():
+        image_formset = DreamImageFormSet(request.POST, request.FILES, prefix='images')
+        
+        if form.is_valid() and image_formset.is_valid():
             dream = form.save(commit=False)
             dream.user = request.user
             dream.save()
             form.save_m2m()
+            
+            # Save image formset
+            image_formset.instance = dream
+            image_formset.save()
             
             # Handle voice transcription if audio file uploaded
             if dream.voice_recording:
@@ -120,8 +126,13 @@ def dream_create(request):
                 return redirect('dreams:detail', pk=dream.pk)
     else:
         form = DreamForm(initial={'privacy_level': request.user.default_privacy})
+        image_formset = DreamImageFormSet(prefix='images')
     
-    return render(request, 'dreams/dream_form.html', {'form': form, 'action': 'Create'})
+    return render(request, 'dreams/dream_form.html', {
+        'form': form, 
+        'image_formset': image_formset,
+        'action': 'Create'
+    })
 
 
 @login_required
@@ -131,8 +142,11 @@ def dream_edit(request, pk):
     
     if request.method == 'POST':
         form = DreamForm(request.POST, request.FILES, instance=dream)
-        if form.is_valid():
+        image_formset = DreamImageFormSet(request.POST, request.FILES, instance=dream, prefix='images')
+        
+        if form.is_valid() and image_formset.is_valid():
             dream = form.save()
+            image_formset.save()
             
             # Re-analyze if content changed
             if 'description' in form.changed_data or 'voice_recording' in form.changed_data:
@@ -160,8 +174,14 @@ def dream_edit(request, pk):
                 return redirect('dreams:detail', pk=dream.pk)
     else:
         form = DreamForm(instance=dream)
+        image_formset = DreamImageFormSet(instance=dream, prefix='images')
     
-    return render(request, 'dreams/dream_form.html', {'form': form, 'action': 'Edit', 'dream': dream})
+    return render(request, 'dreams/dream_form.html', {
+        'form': form, 
+        'image_formset': image_formset,
+        'action': 'Edit', 
+        'dream': dream
+    })
 
 
 @login_required

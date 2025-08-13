@@ -1,5 +1,11 @@
 from django.contrib import admin
-from .models import Dream, DreamTag
+from .models import Dream, DreamTag, DreamImage
+
+
+class DreamImageInline(admin.TabularInline):
+    model = DreamImage
+    extra = 1
+    fields = ['image', 'image_url', 'caption', 'order']
 
 
 @admin.register(Dream)
@@ -9,6 +15,7 @@ class DreamAdmin(admin.ModelAdmin):
     search_fields = ['title', 'description', 'transcription', 'mood']
     readonly_fields = ['id', 'created_at', 'updated_at']
     date_hierarchy = 'dream_date'
+    inlines = [DreamImageInline]
     
     fieldsets = (
         ('Basic Information', {
@@ -44,3 +51,11 @@ class DreamTagAdmin(admin.ModelAdmin):
     def dream_count(self, obj):
         return obj.dreams.count()
     dream_count.short_description = 'Dreams'
+
+
+@admin.register(DreamImage)
+class DreamImageAdmin(admin.ModelAdmin):
+    list_display = ['dream', 'caption', 'order', 'uploaded_at']
+    list_filter = ['uploaded_at']
+    search_fields = ['caption', 'dream__title']
+    ordering = ['dream', 'order']

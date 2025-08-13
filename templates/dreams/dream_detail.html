@@ -2,6 +2,102 @@
 
 {% block title %}{{ dream.title|default:"Dream" }} - NewDreamFlow{% endblock %}
 
+{% block extra_head %}
+<style>
+    .image-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.5rem;
+    }
+    
+    .image-grid img {
+        width: 100%;
+        height: 150px;
+        object-fit: cover;
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+    
+    .image-grid img:hover {
+        transform: scale(1.05);
+    }
+    
+    .image-modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.95);
+        animation: fadeIn 0.3s;
+    }
+    
+    .image-modal.active {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .modal-content {
+        max-width: 90%;
+        max-height: 90%;
+        animation: zoomIn 0.3s;
+    }
+    
+    .modal-content img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+    
+    .close-modal {
+        position: absolute;
+        top: 20px;
+        right: 40px;
+        color: #f1f1f1;
+        font-size: 40px;
+        font-weight: bold;
+        cursor: pointer;
+        z-index: 1001;
+    }
+    
+    .close-modal:hover,
+    .close-modal:focus {
+        color: #bbb;
+    }
+    
+    .image-caption {
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        color: white;
+        text-align: center;
+        padding: 10px;
+        background: rgba(0, 0, 0, 0.5);
+        border-radius: 5px;
+    }
+    
+    @keyframes fadeIn {
+        from {opacity: 0;}
+        to {opacity: 1;}
+    }
+    
+    @keyframes zoomIn {
+        from {transform: scale(0.8);}
+        to {transform: scale(1);}
+    }
+    
+    @media (max-width: 768px) {
+        .image-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="max-w-4xl mx-auto px-4 py-5">
     <div class="bg-white rounded-lg shadow-lg overflow-hidden" style="background-color: var(--bg-secondary);">
@@ -149,6 +245,23 @@
             </div>
             {% endif %}
             
+            <!-- Dream Images -->
+            {% if dream.images.exists %}
+            <div class="mb-6">
+                <h3 class="text-lg font-semibold mb-3">Dream Images</h3>
+                <div class="image-grid">
+                    {% for image in dream.images.all %}
+                    <div class="image-item">
+                        <img src="{{ image.get_image_url }}" 
+                             alt="{{ image.caption|default:'Dream image' }}"
+                             data-caption="{{ image.caption }}"
+                             onclick="openImageModal(this)">
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            
             <!-- Sharing Info -->
             {% if dream.is_shared %}
             <div class="border-t pt-6">
@@ -194,4 +307,44 @@
         </a>
     </div>
 </div>
+
+<!-- Image Modal -->
+<div id="imageModal" class="image-modal">
+    <span class="close-modal" onclick="closeImageModal()">&times;</span>
+    <div class="modal-content">
+        <img id="modalImage" src="" alt="">
+        <div id="modalCaption" class="image-caption"></div>
+    </div>
+</div>
+
+<script>
+function openImageModal(img) {
+    const modal = document.getElementById('imageModal');
+    const modalImg = document.getElementById('modalImage');
+    const modalCaption = document.getElementById('modalCaption');
+    
+    modal.classList.add('active');
+    modalImg.src = img.src;
+    modalCaption.textContent = img.dataset.caption || '';
+    
+    // Close modal on click outside image
+    modal.onclick = function(e) {
+        if (e.target === modal) {
+            closeImageModal();
+        }
+    }
+}
+
+function closeImageModal() {
+    const modal = document.getElementById('imageModal');
+    modal.classList.remove('active');
+}
+
+// Close modal with Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeImageModal();
+    }
+});
+</script>
 {% endblock %}

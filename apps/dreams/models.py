@@ -115,6 +115,49 @@ class Dream(models.Model):
     def is_public_dream(self):
         """Check if dream should be indexed in Algolia (only community dreams)."""
         return self.privacy_level == 'community'
+    
+    @property
+    def string_id(self):
+        """Return the ID as a string for Algolia."""
+        return str(self.id)
+
+
+class DreamImage(models.Model):
+    """Images associated with dreams."""
+    
+    dream = models.ForeignKey(
+        Dream,
+        on_delete=models.CASCADE,
+        related_name='images'
+    )
+    image = models.ImageField(
+        upload_to='dream_images/%Y/%m/',
+        null=True,
+        blank=True,
+        help_text="Image file upload"
+    )
+    image_url = models.URLField(
+        max_length=500,
+        blank=True,
+        help_text="External image URL"
+    )
+    caption = models.CharField(max_length=200, blank=True)
+    order = models.IntegerField(default=0)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        db_table = 'dream_images'
+        ordering = ['order', 'uploaded_at']
+    
+    def __str__(self):
+        return f"Image for {self.dream.title or 'Dream'}"
+    
+    @property
+    def get_image_url(self):
+        """Return the appropriate image URL."""
+        if self.image:
+            return self.image.url
+        return self.image_url
 
 
 class DreamTag(models.Model):

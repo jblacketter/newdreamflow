@@ -1,5 +1,6 @@
 from django import forms
-from .models import Dream, DreamTag
+from django.forms import inlineformset_factory
+from .models import Dream, DreamTag, DreamImage
 
 
 class DreamForm(forms.ModelForm):
@@ -82,3 +83,49 @@ class DreamForm(forms.ModelForm):
             self.fields['tags'].initial = ', '.join(
                 tag.name for tag in self.instance.tags.all()
             )
+
+
+class DreamImageForm(forms.ModelForm):
+    """Form for uploading dream images."""
+    
+    class Meta:
+        model = DreamImage
+        fields = ['image', 'image_url', 'caption']
+        widgets = {
+            'image': forms.FileInput(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-purple-500 focus:border-purple-500',
+                'accept': 'image/*'
+            }),
+            'image_url': forms.URLInput(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-purple-500 focus:border-purple-500',
+                'placeholder': 'Or paste an image URL'
+            }),
+            'caption': forms.TextInput(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-purple-500 focus:border-purple-500',
+                'placeholder': 'Optional caption for this image'
+            })
+        }
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        image = cleaned_data.get('image')
+        image_url = cleaned_data.get('image_url')
+        
+        if not image and not image_url:
+            raise forms.ValidationError('Please provide either an image file or an image URL.')
+        
+        if image and image_url:
+            raise forms.ValidationError('Please provide either an image file or an image URL, not both.')
+        
+        return cleaned_data
+
+
+# Formset for multiple image uploads
+DreamImageFormSet = inlineformset_factory(
+    Dream, 
+    DreamImage,
+    form=DreamImageForm,
+    extra=3,
+    can_delete=True,
+    max_num=9  # Maximum 9 images for 3x3 grid
+)

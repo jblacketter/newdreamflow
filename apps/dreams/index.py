@@ -19,8 +19,8 @@ class DreamIndex(AlgoliaIndex):
         'lucidity_level',
     ]
     
-    # Custom primary key field - removed to use get_model_obj_id instead
-    # custom_objectID = 'id'
+    # Tell Algolia to use the string_id property
+    custom_objectID = 'string_id'
     
     # Settings for search
     settings = {

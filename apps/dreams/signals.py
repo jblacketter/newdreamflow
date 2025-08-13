@@ -27,16 +27,20 @@ def update_dream_in_algolia(sender, instance, created, **kwargs):
     if not algolia_search.enabled:
         return
     
-    # If dream is community, add/update in Algolia
-    if instance.privacy_level == 'community':
-        algolia_search.update_dream_index(instance)
-        logger.info(f"Dream {instance.id} indexed in Algolia")
-    
-    # If privacy changed from community to something else, remove from Algolia
-    elif hasattr(instance, '_privacy_changed') and instance._privacy_changed:
-        if hasattr(instance, '_old_privacy') and instance._old_privacy == 'community':
-            algolia_search.remove_dream_from_index(instance)
-            logger.info(f"Dream {instance.id} removed from Algolia (no longer community)")
+    try:
+        # If dream is community, add/update in Algolia
+        if instance.privacy_level == 'community':
+            algolia_search.update_dream_index(instance)
+            logger.info(f"Dream {str(instance.id)} indexed in Algolia")
+        
+        # If privacy changed from community to something else, remove from Algolia
+        elif hasattr(instance, '_privacy_changed') and instance._privacy_changed:
+            if hasattr(instance, '_old_privacy') and instance._old_privacy == 'community':
+                algolia_search.remove_dream_from_index(instance)
+                logger.info(f"Dream {str(instance.id)} removed from Algolia (no longer community)")
+    except Exception as e:
+        logger.error(f"Error updating Algolia index for dream {str(instance.id)}: {e}")
+        # Don't let Algolia errors prevent saving the dream
 
 
 @receiver(post_delete, sender=Dream)
@@ -45,6 +49,10 @@ def remove_dream_from_algolia(sender, instance, **kwargs):
     if not algolia_search.enabled:
         return
     
-    if instance.privacy_level == 'community':
-        algolia_search.remove_dream_from_index(instance)
-        logger.info(f"Dream {instance.id} removed from Algolia (deleted)")
+    try:
+        if instance.privacy_level == 'community':
+            algolia_search.remove_dream_from_index(instance)
+            logger.info(f"Dream {str(instance.id)} removed from Algolia (deleted)")
+    except Exception as e:
+        logger.error(f"Error removing dream {str(instance.id)} from Algolia: {e}")
+        # Don't let Algolia errors prevent deleting the dream
