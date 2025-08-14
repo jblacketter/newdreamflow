@@ -14,6 +14,12 @@ REM Install dependencies
 echo Installing dependencies...
 pip install -r requirements.txt
 
+REM Install spaCy language model for semantic analysis
+echo.
+echo Installing spaCy English language model for semantic bit theory...
+python -m spacy download en_core_web_sm
+echo spaCy model installation complete!
+
 REM Copy environment file
 echo Setting up environment file...
 if not exist .env (

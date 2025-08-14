@@ -10,9 +10,12 @@ class SemanticService:
         try:
             # Load the English language model
             self.nlp = spacy.load("en_core_web_sm")
-        except:
-            print("Warning: spaCy model not loaded. Run: python -m spacy download en_core_web_sm")
+            self.model_loaded = True
+        except Exception as e:
+            print(f"Warning: spaCy model not loaded. Error: {e}")
+            print("Run: python -m spacy download en_core_web_sm")
             self.nlp = None
+            self.model_loaded = False
     
     def extract_semantic_bits(self, text: str) -> Dict:
         """
@@ -79,6 +82,10 @@ class SemanticService:
             }
         }
     
+    def is_available(self) -> bool:
+        """Check if the semantic service is available."""
+        return self.model_loaded and self.nlp is not None
+    
     def create_highlighted_html(self, text: str) -> str:
         """
         Create HTML with color-coded semantic bits.
@@ -89,6 +96,14 @@ class SemanticService:
         Others: Default color
         """
         if not self.nlp or not text:
+            # Return a message if spaCy is not available
+            if not self.nlp:
+                return format_html(
+                    '<div class="p-3 bg-yellow-50 border border-yellow-200 rounded">'
+                    '<p class="text-yellow-800">Semantic analysis not available. '
+                    'Please install spaCy: <code>python -m spacy download en_core_web_sm</code></p>'
+                    '</div>'
+                )
             return text
         
         doc = self.nlp(text)
@@ -102,30 +117,30 @@ class SemanticService:
             
             # Determine color based on part of speech
             if token.pos_ == "VERB":
-                # Verbs in blue
+                # Verbs in blue - using !important for cross-browser compatibility
                 html_parts.append(format_html(
-                    '<span class="semantic-verb" style="color: #3B82F6; font-weight: 500;" '
+                    '<span class="semantic-verb" style="color: #3B82F6 !important; font-weight: 500 !important; display: inline !important;" '
                     'data-pos="VERB" data-lemma="{}" title="Verb: {}">{}</span>',
                     token.lemma_, token.lemma_, token.text
                 ))
             elif token.pos_ == "NOUN":
-                # Nouns in green
+                # Nouns in green - using !important for cross-browser compatibility
                 html_parts.append(format_html(
-                    '<span class="semantic-noun" style="color: #10B981; font-weight: 500;" '
+                    '<span class="semantic-noun" style="color: #10B981 !important; font-weight: 500 !important; display: inline !important;" '
                     'data-pos="NOUN" data-lemma="{}" title="Noun: {}">{}</span>',
                     token.lemma_, token.lemma_, token.text
                 ))
             elif token.pos_ == "ADJ":
-                # Adjectives in purple
+                # Adjectives in purple - using !important for cross-browser compatibility
                 html_parts.append(format_html(
-                    '<span class="semantic-adj" style="color: #8B5CF6; font-weight: 500;" '
+                    '<span class="semantic-adj" style="color: #8B5CF6 !important; font-weight: 500 !important; display: inline !important;" '
                     'data-pos="ADJ" data-lemma="{}" title="Adjective: {}">{}</span>',
                     token.lemma_, token.lemma_, token.text
                 ))
             else:
                 # Other words in default color
                 html_parts.append(format_html(
-                    '<span class="semantic-other" data-pos="{}" title="{}">{}</span>',
+                    '<span class="semantic-other" style="display: inline !important;" data-pos="{}" title="{}">{}</span>',
                     token.pos_, token.pos_, token.text
                 ))
             
