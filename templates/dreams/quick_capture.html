@@ -191,17 +191,40 @@
 
     /* Focus mode styles */
     body.focus-mode .write-header {
-        opacity: 0;
-        pointer-events: none;
-    }
-
-    body.focus-mode:hover .write-header {
-        opacity: 0.6;
+        opacity: 1;
         pointer-events: all;
+    }
+    
+    body.focus-mode .write-header .write-actions {
+        opacity: 1 !important;
+        pointer-events: all !important;
+    }
+    
+    body.focus-mode #save-btn,
+    body.focus-mode #toggle-focus {
+        display: inline-block !important;
+    }
+    
+    body.focus-mode #toggle-preview,
+    body.focus-mode #view-btn,
+    body.focus-mode .write-actions a {
+        display: none !important;
     }
 
     body.focus-mode .write-container {
         padding-top: 4rem;
+    }
+    
+    body.focus-mode #title-input {
+        display: none;
+    }
+    
+    body.focus-mode .image-upload-section {
+        display: none;
+    }
+    
+    body.focus-mode .write-status {
+        display: none;
     }
 
 
@@ -463,14 +486,12 @@
 <div class="write-container">
     <div class="write-header">
         <div class="write-status">
-            <div class="save-indicator" id="save-indicator">
-                <span id="save-text">Press Cmd+Enter to save</span>
-            </div>
             <div class="word-count">
                 <span id="word-count">0</span> words
             </div>
         </div>
         <div class="write-actions">
+            <button type="button" class="action-btn" id="save-btn" style="background: var(--write-accent); color: white; border-color: var(--write-accent);">Save</button>
             <button class="action-btn" id="toggle-preview">Preview</button>
             <button class="action-btn" id="toggle-focus">Focus</button>
             <button class="action-btn" id="view-btn" style="display: none;">View</button>
@@ -527,8 +548,6 @@
 document.addEventListener('DOMContentLoaded', function() {
     const textarea = document.getElementById('content-textarea');
     const wordCount = document.getElementById('word-count');
-    const saveIndicator = document.getElementById('save-indicator');
-    const saveText = document.getElementById('save-text');
     const dreamIdInput = document.getElementById('dream_id');
     const form = document.getElementById('capture-form');
     const viewBtn = document.getElementById('view-btn');
@@ -537,9 +556,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const writeSplit = document.getElementById('write-split');
     const markdownPreview = document.getElementById('markdown-preview');
     const titleInput = document.getElementById('title-input');
+    const saveBtn = document.getElementById('save-btn');
     
-    let saveTimeout;
-    let lastSavedContent = textarea.value;
     let previewVisible = false;
     
     // Auto-resize textarea
@@ -618,6 +636,11 @@ document.addEventListener('DOMContentLoaded', function() {
         updateWordCount();
         updatePreview();
         // Removed autoSave - manual save only
+    });
+    
+    // Save button click handler
+    saveBtn.addEventListener('click', () => {
+        form.submit();
     });
     
     // Keyboard shortcuts
