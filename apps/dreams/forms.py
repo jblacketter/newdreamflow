@@ -90,7 +90,7 @@ class DreamImageForm(forms.ModelForm):
     
     class Meta:
         model = DreamImage
-        fields = ['image', 'image_url', 'caption']
+        fields = ['image', 'image_url']  # Removed caption field
         widgets = {
             'image': forms.FileInput(attrs={
                 'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-purple-500 focus:border-purple-500',
@@ -99,10 +99,6 @@ class DreamImageForm(forms.ModelForm):
             'image_url': forms.URLInput(attrs={
                 'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-purple-500 focus:border-purple-500',
                 'placeholder': 'Or paste an image URL'
-            }),
-            'caption': forms.TextInput(attrs={
-                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-purple-500 focus:border-purple-500',
-                'placeholder': 'Optional caption for this image'
             })
         }
     

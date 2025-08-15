@@ -93,20 +93,20 @@ def quick_capture(request):
         
         # Handle regular form submission (Cmd+Enter)
         content = request.POST.get('content', '')
+        title = request.POST.get('title', '')
         dream_id = request.POST.get('dream_id')
         
         if dream_id and dream_id != 'new':
             dream = get_object_or_404(Dream, pk=dream_id, user=request.user)
             dream.description = content
-            if not dream.title and content:
-                dream.title = content.split('\n')[0][:200].strip('#').strip()
+            dream.title = title
         else:
             dream = Dream(
                 user=request.user,
                 description=content,
-                title=content.split('\n')[0][:200].strip('#').strip() if content else '',
+                title=title,
                 dream_date=timezone.now().date(),
-                privacy_level='private'
+                privacy_level='private'  # Always private by default
             )
         
         # Add AI analysis if content exists
@@ -123,6 +123,14 @@ def quick_capture(request):
             dream.semantic_bits = semantic_analysis
         
         dream.save()
+        
+        # Handle image uploads
+        images = request.FILES.getlist('images')
+        for image in images:
+            DreamImage.objects.create(
+                dream=dream,
+                image=image
+            )
         
         messages.success(request, 'Saved successfully!')
         return redirect('dreams:detail', pk=dream.pk)

@@ -23,7 +23,7 @@ from apps.users import views as user_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', dream_views.home, name='home'),
+    path('', dream_views.quick_capture, name='home'),  # Quick capture as default home
     path('register/', user_views.register, name='register'),
     path('things/', include('apps.dreams.urls', namespace='dreams')),
     path('patterns/', include('apps.patterns.urls', namespace='patterns')),
