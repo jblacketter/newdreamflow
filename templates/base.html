@@ -204,6 +204,9 @@
                         <a href="{% url 'dreams:list' %}" class="border-transparent hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
                             My Things
                         </a>
+                        <a href="{% url 'dreams:quick_capture' %}" class="border-transparent hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                            ✍️ Write
+                        </a>
                         <a href="{% url 'dreams:create' %}" class="border-transparent hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
                             New Thing
                         </a>
@@ -260,6 +263,55 @@
         
         {% block content %}{% endblock %}
     </main>
+    
+    <!-- Floating Action Button for Quick Capture -->
+    {% if user.is_authenticated %}
+    <a href="{% url 'dreams:quick_capture' %}" 
+       id="fab-quick-capture"
+       class="fixed bottom-6 right-6 w-14 h-14 bg-purple-600 hover:bg-purple-700 text-white rounded-full shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-110 z-40"
+       title="Quick capture (Shortcut: /)">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+    </a>
+    
+    <style>
+        #fab-quick-capture {
+            animation: pulse-subtle 2s infinite;
+        }
+        
+        @keyframes pulse-subtle {
+            0%, 100% {
+                opacity: 0.9;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.05);
+            }
+        }
+        
+        #fab-quick-capture:hover {
+            animation: none;
+        }
+        
+        /* Hide FAB on quick capture page */
+        body.quick-capture #fab-quick-capture {
+            display: none;
+        }
+    </style>
+    
+    <script>
+        // Global keyboard shortcut for quick capture
+        document.addEventListener('keydown', function(e) {
+            // Press "/" to open quick capture (when not in an input field)
+            if (e.key === '/' && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
+                e.preventDefault();
+                window.location.href = '{% url "dreams:quick_capture" %}';
+            }
+        });
+    </script>
+    {% endif %}
     
     <!-- Background Music Player (if enabled) -->
     {% if user.is_authenticated and user.background_music != 'none' %}

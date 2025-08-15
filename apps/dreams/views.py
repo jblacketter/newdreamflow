@@ -6,6 +6,7 @@ from django.http import JsonResponse
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt
 from .models import Dream, DreamTag, DreamImage
 from .forms import DreamForm, DreamImageFormSet
 from .services.ai_service import ai_service
@@ -24,6 +25,119 @@ def home(request):
     else:
         context = {}
     return render(request, 'dreams/home.html', context)
+
+
+@login_required
+def quick_capture(request):
+    """Minimalist quick capture view for frictionless writing."""
+    if request.method == 'POST':
+        # Handle auto-save via AJAX
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            dream_id = request.POST.get('dream_id')
+            content = request.POST.get('content', '')
+            
+            if dream_id and dream_id != 'new':
+                # Update existing dream
+                try:
+                    dream = Dream.objects.get(pk=dream_id, user=request.user)
+                    dream.description = content
+                    
+                    # Extract title from first line if not set
+                    if not dream.title and content:
+                        lines = content.split('\n')
+                        if lines:
+                            # Use first line as title (max 200 chars)
+                            dream.title = lines[0][:200].strip('#').strip()
+                    
+                    # Update semantic analysis in background
+                    if content:
+                        semantic_analysis = semantic_service.extract_semantic_bits(content)
+                        dream.semantic_verbs = semantic_analysis.get('verbs', [])
+                        dream.semantic_nouns = semantic_analysis.get('nouns', [])
+                        dream.semantic_bits = semantic_analysis
+                    
+                    dream.save()
+                    
+                    return JsonResponse({
+                        'success': True,
+                        'dream_id': str(dream.pk),
+                        'word_count': len(content.split()),
+                        'saved_at': timezone.now().strftime('%H:%M')
+                    })
+                except Dream.DoesNotExist:
+                    pass
+            
+            # Create new dream if needed
+            if content:  # Only create if there's content
+                dream = Dream.objects.create(
+                    user=request.user,
+                    description=content,
+                    title=content.split('\n')[0][:200].strip('#').strip() if content else '',
+                    dream_date=timezone.now().date(),
+                    privacy_level='private'  # Default to private for minimal friction
+                )
+                
+                # Add semantic analysis
+                semantic_analysis = semantic_service.extract_semantic_bits(content)
+                dream.semantic_verbs = semantic_analysis.get('verbs', [])
+                dream.semantic_nouns = semantic_analysis.get('nouns', [])
+                dream.semantic_bits = semantic_analysis
+                dream.save()
+                
+                return JsonResponse({
+                    'success': True,
+                    'dream_id': str(dream.pk),
+                    'word_count': len(content.split()),
+                    'saved_at': timezone.now().strftime('%H:%M')
+                })
+        
+        # Handle regular form submission (Cmd+Enter)
+        content = request.POST.get('content', '')
+        dream_id = request.POST.get('dream_id')
+        
+        if dream_id and dream_id != 'new':
+            dream = get_object_or_404(Dream, pk=dream_id, user=request.user)
+            dream.description = content
+            if not dream.title and content:
+                dream.title = content.split('\n')[0][:200].strip('#').strip()
+        else:
+            dream = Dream(
+                user=request.user,
+                description=content,
+                title=content.split('\n')[0][:200].strip('#').strip() if content else '',
+                dream_date=timezone.now().date(),
+                privacy_level='private'
+            )
+        
+        # Add AI analysis if content exists
+        if content:
+            analysis = ai_service.analyze_dream(content)
+            dream.themes = analysis.get('themes', [])
+            dream.symbols = analysis.get('symbols', [])
+            dream.entities = analysis.get('entities', [])
+            
+            # Semantic analysis
+            semantic_analysis = semantic_service.extract_semantic_bits(content)
+            dream.semantic_verbs = semantic_analysis.get('verbs', [])
+            dream.semantic_nouns = semantic_analysis.get('nouns', [])
+            dream.semantic_bits = semantic_analysis
+        
+        dream.save()
+        
+        messages.success(request, 'Saved successfully!')
+        return redirect('dreams:detail', pk=dream.pk)
+    
+    # GET request - check if editing existing dream
+    dream_id = request.GET.get('edit')
+    dream = None
+    if dream_id:
+        dream = get_object_or_404(Dream, pk=dream_id, user=request.user)
+    
+    context = {
+        'dream': dream,
+        'focus_mode': request.GET.get('focus', False)
+    }
+    return render(request, 'dreams/quick_capture.html', context)
 
 
 @login_required

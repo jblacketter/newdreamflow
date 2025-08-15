@@ -1,0 +1,588 @@
+{% extends 'base.html' %}
+
+{% block title %}Write{% endblock %}
+
+{% block extra_head %}
+<style>
+    :root {
+        --write-bg: #fafafa;
+        --write-text: #333;
+        --write-accent: #6366f1;
+        --write-muted: #9ca3af;
+        --write-border: #e5e7eb;
+    }
+
+    @media (prefers-color-scheme: dark) {
+        :root {
+            --write-bg: #1a1a1a;
+            --write-text: #e5e5e5;
+            --write-accent: #818cf8;
+            --write-muted: #6b7280;
+            --write-border: #374151;
+        }
+    }
+
+    body.quick-capture {
+        background: var(--write-bg);
+        color: var(--write-text);
+    }
+
+    .write-container {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 2rem 1rem;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .write-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        opacity: 0.6;
+        transition: opacity 0.3s;
+    }
+
+    .write-header:hover {
+        opacity: 1;
+    }
+
+    .write-status {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        font-size: 0.875rem;
+        color: var(--write-muted);
+    }
+
+    .save-indicator {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .save-indicator.saving {
+        color: var(--write-accent);
+    }
+
+    .save-indicator.saved {
+        color: var(--write-muted);
+    }
+
+    .word-count {
+        color: var(--write-muted);
+    }
+
+    .write-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .action-btn {
+        padding: 0.5rem 1rem;
+        background: transparent;
+        border: 1px solid var(--write-border);
+        border-radius: 0.375rem;
+        color: var(--write-text);
+        font-size: 0.875rem;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .action-btn:hover {
+        background: var(--write-accent);
+        color: white;
+        border-color: var(--write-accent);
+    }
+
+    .write-area {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    #content-textarea {
+        width: 100%;
+        min-height: 400px;
+        padding: 0;
+        border: none;
+        outline: none;
+        background: transparent;
+        color: var(--write-text);
+        font-size: 1.125rem;
+        line-height: 1.75;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        resize: none;
+        overflow-y: hidden;
+    }
+
+    #content-textarea::placeholder {
+        color: var(--write-muted);
+        opacity: 0.5;
+    }
+
+    /* Focus mode styles */
+    body.focus-mode .write-header {
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    body.focus-mode:hover .write-header {
+        opacity: 0.6;
+        pointer-events: all;
+    }
+
+    body.focus-mode .write-container {
+        padding-top: 4rem;
+    }
+
+    /* Metadata panel (hidden by default) */
+    .metadata-panel {
+        margin-top: 2rem;
+        padding-top: 2rem;
+        border-top: 1px solid var(--write-border);
+        display: none;
+    }
+
+    .metadata-panel.show {
+        display: block;
+    }
+
+    .metadata-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+
+    .metadata-field {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .metadata-field label {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--write-muted);
+    }
+
+    .metadata-field input,
+    .metadata-field select {
+        padding: 0.5rem;
+        border: 1px solid var(--write-border);
+        border-radius: 0.375rem;
+        background: var(--write-bg);
+        color: var(--write-text);
+        font-size: 0.875rem;
+    }
+
+    /* Keyboard shortcuts hint */
+    .shortcuts-hint {
+        position: fixed;
+        bottom: 1rem;
+        right: 1rem;
+        padding: 0.5rem 1rem;
+        background: var(--write-bg);
+        border: 1px solid var(--write-border);
+        border-radius: 0.375rem;
+        font-size: 0.75rem;
+        color: var(--write-muted);
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+
+    .shortcuts-hint:hover {
+        opacity: 1;
+    }
+
+    /* Floating action button */
+    .fab {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: var(--write-accent);
+        color: white;
+        border: none;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        transition: all 0.3s;
+        z-index: 1000;
+    }
+
+    .fab:hover {
+        transform: scale(1.1);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Markdown preview styles */
+    .write-split {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        height: 100%;
+    }
+
+    .write-split.preview-hidden {
+        grid-template-columns: 1fr;
+    }
+
+    .markdown-preview {
+        padding: 0;
+        overflow-y: auto;
+        font-size: 1.125rem;
+        line-height: 1.75;
+    }
+
+    .markdown-preview h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        margin: 1.5rem 0 1rem;
+    }
+
+    .markdown-preview h2 {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin: 1.25rem 0 0.75rem;
+    }
+
+    .markdown-preview h3 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin: 1rem 0 0.5rem;
+    }
+
+    .markdown-preview p {
+        margin: 0.75rem 0;
+    }
+
+    .markdown-preview ul,
+    .markdown-preview ol {
+        margin: 0.75rem 0;
+        padding-left: 1.5rem;
+    }
+
+    .markdown-preview li {
+        margin: 0.25rem 0;
+    }
+
+    .markdown-preview blockquote {
+        border-left: 4px solid var(--write-border);
+        padding-left: 1rem;
+        margin: 1rem 0;
+        color: var(--write-muted);
+        font-style: italic;
+    }
+
+    .markdown-preview code {
+        background: var(--write-border);
+        padding: 0.125rem 0.25rem;
+        border-radius: 0.25rem;
+        font-family: 'Courier New', monospace;
+        font-size: 0.9em;
+    }
+
+    .markdown-preview pre {
+        background: var(--write-border);
+        padding: 1rem;
+        border-radius: 0.375rem;
+        overflow-x: auto;
+        margin: 1rem 0;
+    }
+
+    .markdown-preview pre code {
+        background: transparent;
+        padding: 0;
+    }
+
+    .markdown-preview a {
+        color: var(--write-accent);
+        text-decoration: underline;
+    }
+
+    .markdown-preview strong {
+        font-weight: 600;
+    }
+
+    .markdown-preview em {
+        font-style: italic;
+    }
+
+    .markdown-preview hr {
+        border: none;
+        border-top: 1px solid var(--write-border);
+        margin: 2rem 0;
+    }
+
+    /* Mobile optimizations */
+    @media (max-width: 640px) {
+        .write-container {
+            padding: 1rem;
+        }
+
+        #content-textarea {
+            font-size: 1rem;
+        }
+
+        .write-header {
+            flex-direction: column;
+            gap: 1rem;
+            align-items: flex-start;
+        }
+
+        .fab {
+            bottom: 1rem;
+            right: 1rem;
+        }
+
+        .write-split {
+            grid-template-columns: 1fr;
+        }
+
+        .markdown-preview {
+            display: none;
+        }
+    }
+</style>
+
+<!-- Include marked.js for Markdown parsing -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="write-container">
+    <div class="write-header">
+        <div class="write-status">
+            <div class="save-indicator" id="save-indicator">
+                <span id="save-text">Ready</span>
+            </div>
+            <div class="word-count">
+                <span id="word-count">0</span> words
+            </div>
+        </div>
+        <div class="write-actions">
+            <button class="action-btn" id="toggle-preview">Preview</button>
+            <button class="action-btn" id="toggle-metadata">Details</button>
+            <button class="action-btn" id="toggle-focus">Focus</button>
+            <button class="action-btn" id="view-btn" style="display: none;">View</button>
+            <a href="{% url 'dreams:list' %}" class="action-btn">Back</a>
+        </div>
+    </div>
+
+    <form method="post" id="capture-form">
+        {% csrf_token %}
+        <input type="hidden" name="dream_id" id="dream_id" value="{% if dream %}{{ dream.pk }}{% else %}new{% endif %}">
+        
+        <div class="write-area">
+            <div class="write-split preview-hidden" id="write-split">
+                <textarea 
+                    id="content-textarea"
+                    name="content"
+                    placeholder="Start writing... (Markdown supported)"
+                    autofocus
+                >{% if dream %}{{ dream.description }}{% endif %}</textarea>
+                <div class="markdown-preview" id="markdown-preview" style="display: none;"></div>
+            </div>
+        </div>
+
+        <div class="metadata-panel" id="metadata-panel">
+            <div class="metadata-grid">
+                <div class="metadata-field">
+                    <label for="title">Title (optional)</label>
+                    <input type="text" id="title" name="title" value="{% if dream %}{{ dream.title }}{% endif %}">
+                </div>
+                <div class="metadata-field">
+                    <label for="date">Date</label>
+                    <input type="date" id="date" name="date" value="{% if dream %}{{ dream.dream_date|date:'Y-m-d' }}{% else %}{{ today|date:'Y-m-d' }}{% endif %}">
+                </div>
+                <div class="metadata-field">
+                    <label for="privacy">Privacy</label>
+                    <select id="privacy" name="privacy">
+                        <option value="private" {% if not dream or dream.privacy_level == 'private' %}selected{% endif %}>Private</option>
+                        <option value="specific_users" {% if dream and dream.privacy_level == 'specific_users' %}selected{% endif %}>Specific Users</option>
+                        <option value="groups" {% if dream and dream.privacy_level == 'groups' %}selected{% endif %}>Groups</option>
+                        <option value="community" {% if dream and dream.privacy_level == 'community' %}selected{% endif %}>Community</option>
+                    </select>
+                </div>
+                <div class="metadata-field">
+                    <label for="mood">Mood</label>
+                    <input type="text" id="mood" name="mood" placeholder="How did it feel?" value="{% if dream %}{{ dream.mood }}{% endif %}">
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="shortcuts-hint">
+    <kbd>Cmd</kbd> + <kbd>Enter</kbd> to save
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const textarea = document.getElementById('content-textarea');
+    const wordCount = document.getElementById('word-count');
+    const saveIndicator = document.getElementById('save-indicator');
+    const saveText = document.getElementById('save-text');
+    const dreamIdInput = document.getElementById('dream_id');
+    const form = document.getElementById('capture-form');
+    const viewBtn = document.getElementById('view-btn');
+    const toggleMetadata = document.getElementById('toggle-metadata');
+    const toggleFocus = document.getElementById('toggle-focus');
+    const togglePreview = document.getElementById('toggle-preview');
+    const metadataPanel = document.getElementById('metadata-panel');
+    const writeSplit = document.getElementById('write-split');
+    const markdownPreview = document.getElementById('markdown-preview');
+    
+    let saveTimeout;
+    let lastSavedContent = textarea.value;
+    let previewVisible = false;
+    
+    // Auto-resize textarea
+    function autoResize() {
+        textarea.style.height = 'auto';
+        textarea.style.height = textarea.scrollHeight + 'px';
+    }
+    
+    // Update word count
+    function updateWordCount() {
+        const words = textarea.value.trim().split(/\s+/).filter(word => word.length > 0);
+        wordCount.textContent = words.length;
+    }
+    
+    // Update markdown preview
+    function updatePreview() {
+        if (previewVisible && typeof marked !== 'undefined') {
+            const html = marked.parse(textarea.value);
+            markdownPreview.innerHTML = html;
+        }
+    }
+    
+    // Auto-save function
+    function autoSave() {
+        clearTimeout(saveTimeout);
+        
+        const content = textarea.value;
+        if (content === lastSavedContent) return;
+        
+        saveIndicator.classList.remove('saved');
+        saveIndicator.classList.add('saving');
+        saveText.textContent = 'Saving...';
+        
+        saveTimeout = setTimeout(() => {
+            const formData = new FormData();
+            formData.append('content', content);
+            formData.append('dream_id', dreamIdInput.value);
+            formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+            
+            fetch(window.location.pathname, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    saveIndicator.classList.remove('saving');
+                    saveIndicator.classList.add('saved');
+                    saveText.textContent = 'Saved at ' + data.saved_at;
+                    lastSavedContent = content;
+                    
+                    if (data.dream_id && dreamIdInput.value === 'new') {
+                        dreamIdInput.value = data.dream_id;
+                        viewBtn.style.display = 'inline-block';
+                        viewBtn.href = '/things/' + data.dream_id + '/';
+                    }
+                }
+            })
+            .catch(error => {
+                saveIndicator.classList.remove('saving');
+                saveText.textContent = 'Error saving';
+                console.error('Save error:', error);
+            });
+        }, 1000); // Debounce for 1 second
+    }
+    
+    // Event listeners
+    textarea.addEventListener('input', () => {
+        autoResize();
+        updateWordCount();
+        updatePreview();
+        autoSave();
+    });
+    
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+        // Cmd/Ctrl + Enter to save and view
+        if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+            e.preventDefault();
+            form.submit();
+        }
+        
+        // Escape to toggle focus mode
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            document.body.classList.toggle('focus-mode');
+        }
+    });
+    
+    // Toggle metadata panel
+    toggleMetadata.addEventListener('click', () => {
+        metadataPanel.classList.toggle('show');
+        toggleMetadata.textContent = metadataPanel.classList.contains('show') ? 'Hide Details' : 'Details';
+    });
+    
+    // Toggle focus mode
+    toggleFocus.addEventListener('click', () => {
+        document.body.classList.toggle('focus-mode');
+        toggleFocus.textContent = document.body.classList.contains('focus-mode') ? 'Exit Focus' : 'Focus';
+    });
+    
+    // Toggle markdown preview
+    togglePreview.addEventListener('click', () => {
+        previewVisible = !previewVisible;
+        
+        if (previewVisible) {
+            writeSplit.classList.remove('preview-hidden');
+            markdownPreview.style.display = 'block';
+            togglePreview.textContent = 'Hide Preview';
+            updatePreview();
+        } else {
+            writeSplit.classList.add('preview-hidden');
+            markdownPreview.style.display = 'none';
+            togglePreview.textContent = 'Preview';
+        }
+    });
+    
+    // View button for saved dreams
+    if (dreamIdInput.value && dreamIdInput.value !== 'new') {
+        viewBtn.style.display = 'inline-block';
+        viewBtn.onclick = () => {
+            window.location.href = '/things/' + dreamIdInput.value + '/';
+        };
+    }
+    
+    // Initial setup
+    autoResize();
+    updateWordCount();
+    document.body.classList.add('quick-capture');
+    
+    // Check for focus mode in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('focus') === 'true') {
+        document.body.classList.add('focus-mode');
+        toggleFocus.textContent = 'Exit Focus';
+    }
+});
+</script>
+{% endblock %}
