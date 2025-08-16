@@ -1,9 +1,9 @@
 from django.contrib import admin
-from .models import DreamGroup, GroupMembership, ShareHistory
+from .models import ThingGroup, GroupMembership, ShareHistory
 
 
-@admin.register(DreamGroup)
-class DreamGroupAdmin(admin.ModelAdmin):
+@admin.register(ThingGroup)
+class ThingGroupAdmin(admin.ModelAdmin):
     list_display = ['name', 'creator', 'member_count', 'is_private', 'requires_approval', 'created_at']
     list_filter = ['is_private', 'requires_approval', 'created_at']
     search_fields = ['name', 'description']
@@ -24,8 +24,8 @@ class GroupMembershipAdmin(admin.ModelAdmin):
 
 @admin.register(ShareHistory)
 class ShareHistoryAdmin(admin.ModelAdmin):
-    list_display = ['dream', 'action', 'performed_by', 'performed_at']
+    list_display = ['thing', 'action', 'performed_by', 'performed_at']
     list_filter = ['action', 'performed_at']
     readonly_fields = ['performed_at']
-    raw_id_fields = ['dream', 'performed_by']
+    raw_id_fields = ['thing', 'performed_by']
     filter_horizontal = ['affected_users', 'affected_groups']

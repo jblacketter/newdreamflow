@@ -4,33 +4,33 @@ from django.db.models import Count, Avg, Q
 from django.utils import timezone
 from datetime import timedelta
 from django.http import JsonResponse
-from apps.dreams.models import Dream
-from apps.dreams.services.ai_service import ai_service
-from .models import DreamPattern, DreamPatternOccurrence
+from apps.things.models import Thing
+from apps.things.services.ai_service import ai_service
+from .models import ThingPattern, ThingPatternOccurrence
 import json
 
 
 @login_required
 def dashboard(request):
     """Pattern analysis dashboard."""
-    user_dreams = Dream.objects.filter(user=request.user)
+    user_things = Thing.objects.filter(user=request.user)
     
     # Basic statistics
-    total_dreams = user_dreams.count()
-    patterns_found = DreamPattern.objects.filter(user=request.user).count()
-    recurring_themes = DreamPattern.objects.filter(
+    total_things = user_things.count()
+    patterns_found = ThingPattern.objects.filter(user=request.user).count()
+    recurring_themes = ThingPattern.objects.filter(
         user=request.user, 
         pattern_type='theme',
         occurrence_count__gte=2
     ).count()
-    avg_lucidity = user_dreams.aggregate(avg=Avg('lucidity_level'))['avg'] or 0
+    avg_lucidity = user_things.aggregate(avg=Avg('lucidity_level'))['avg'] or 0
     
     # Recent patterns
-    recent_patterns = DreamPattern.objects.filter(
+    recent_patterns = ThingPattern.objects.filter(
         user=request.user
     ).order_by('-updated_at')[:5]
     
-    # Dream frequency timeline (last 30 days)
+    # Thing frequency timeline (last 30 days)
     timeline_data = []
     timeline_labels = []
     today = timezone.now().date()
@@ -38,17 +38,17 @@ def dashboard(request):
         date = today - timedelta(days=i)
         week_start = date - timedelta(days=date.weekday())
         week_end = week_start + timedelta(days=6)
-        count = user_dreams.filter(
-            dream_date__gte=week_start,
-            dream_date__lte=week_end
+        count = user_things.filter(
+            thing_date__gte=week_start,
+            thing_date__lte=week_end
         ).count()
         timeline_data.append(count)
         timeline_labels.append(week_start.strftime('%b %d'))
     
     # Mood distribution
     mood_counts = {}
-    for dream in user_dreams.exclude(mood=''):
-        mood = dream.mood.lower() if dream.mood else 'unknown'
+    for thing in user_things.exclude(mood=''):
+        mood = thing.mood.lower() if thing.mood else 'unknown'
         mood_counts[mood] = mood_counts.get(mood, 0) + 1
     
     mood_labels = list(mood_counts.keys())
@@ -56,9 +56,9 @@ def dashboard(request):
     
     # Common symbols
     symbol_counts = {}
-    for dream in user_dreams:
-        if dream.symbols:
-            for symbol in dream.symbols:
+    for thing in user_things:
+        if thing.symbols:
+            for symbol in thing.symbols:
                 symbol_counts[symbol] = symbol_counts.get(symbol, 0) + 1
     
     common_symbols = [
@@ -66,22 +66,22 @@ def dashboard(request):
         for symbol, count in sorted(symbol_counts.items(), key=lambda x: x[1], reverse=True)[:10]
     ]
     
-    # Run pattern analysis if we have enough dreams
-    if total_dreams >= 5 and patterns_found == 0:
+    # Run pattern analysis if we have enough things
+    if total_things >= 5 and patterns_found == 0:
         analyze_user_patterns(request.user)
-        patterns_found = DreamPattern.objects.filter(user=request.user).count()
+        patterns_found = ThingPattern.objects.filter(user=request.user).count()
     
     # AI insights
     ai_insights = []
-    if total_dreams >= 5:
+    if total_things >= 5:
         ai_insights = [
-            f"You've recorded {total_dreams} dreams with an average lucidity of {avg_lucidity:.1f}/10.",
-            f"Your most common mood in dreams is '{mood_labels[0] if mood_labels else 'varied'}'.",
-            f"We've identified {patterns_found} patterns across your dreams."
+            f"You've recorded {total_things} things with an average lucidity of {avg_lucidity:.1f}/10.",
+            f"Your most common mood in things is '{mood_labels[0] if mood_labels else 'varied'}'.",
+            f"We've identified {patterns_found} patterns across your things."
         ]
     
     context = {
-        'total_dreams': total_dreams,
+        'total_things': total_things,
         'patterns_found': patterns_found,
         'recurring_themes': recurring_themes,
         'avg_lucidity': f"{avg_lucidity:.1f}",
@@ -98,26 +98,26 @@ def dashboard(request):
 
 
 def analyze_user_patterns(user):
-    """Run pattern analysis for a user's dreams."""
-    dreams = Dream.objects.filter(user=user).order_by('dream_date')
+    """Run pattern analysis for a user's things."""
+    things = Thing.objects.filter(user=user).order_by('thing_date')
     
-    if dreams.count() < 3:
+    if things.count() < 3:
         return
     
-    # Prepare dreams for analysis
-    dream_data = []
-    for dream in dreams:
-        dream_data.append({
-            'id': str(dream.id),
-            'date': dream.dream_date.isoformat(),
-            'text': dream.transcription or dream.description,
-            'themes': dream.themes,
-            'symbols': dream.symbols,
-            'entities': dream.entities
+    # Prepare things for analysis
+    thing_data = []
+    for thing in things:
+        thing_data.append({
+            'id': str(thing.id),
+            'date': thing.thing_date.isoformat(),
+            'text': thing.transcription or thing.description,
+            'themes': thing.themes,
+            'symbols': thing.symbols,
+            'entities': thing.entities
         })
     
     # Get AI pattern analysis
-    patterns = ai_service.find_patterns(dream_data)
+    patterns = ai_service.find_patterns(thing_data)
     
     # Create pattern records
     for pattern_data in patterns:
@@ -128,7 +128,7 @@ def analyze_user_patterns(user):
             'sequence': 'sequence'
         }
         
-        pattern, created = DreamPattern.objects.get_or_create(
+        pattern, created = ThingPattern.objects.get_or_create(
             user=user,
             pattern_type=pattern_type_map.get(pattern_data.get('type', 'theme'), 'theme'),
             name=pattern_data.get('name', 'Unknown Pattern'),
@@ -144,12 +144,12 @@ def analyze_user_patterns(user):
             pattern.occurrence_count = len(pattern_data.get('occurrences', []))
             pattern.save()
         
-        # Link dreams to patterns
-        for dream_idx in pattern_data.get('occurrences', []):
-            if dream_idx < len(dreams):
-                dream = dreams[dream_idx]
-                DreamPatternOccurrence.objects.get_or_create(
-                    dream=dream,
+        # Link things to patterns
+        for thing_idx in pattern_data.get('occurrences', []):
+            if thing_idx < len(things):
+                thing = things[thing_idx]
+                ThingPatternOccurrence.objects.get_or_create(
+                    thing=thing,
                     pattern=pattern,
                     defaults={'strength': 0.7}
                 )
@@ -158,9 +158,9 @@ def analyze_user_patterns(user):
 @login_required
 def pattern_network(request):
     """Generate network data for pattern visualization."""
-    patterns = DreamPattern.objects.filter(user=request.user)
+    patterns = ThingPattern.objects.filter(user=request.user)
     
-    # Build nodes for patterns and dreams
+    # Build nodes for patterns and things
     nodes = []
     edges = []
     
@@ -174,41 +174,41 @@ def pattern_network(request):
             'size': min(pattern.occurrence_count * 10, 50)
         })
     
-    # Add dream nodes and edges
-    dreams_added = set()
-    for occurrence in DreamPatternOccurrence.objects.filter(pattern__user=request.user).select_related('dream', 'pattern'):
-        dream_id = f'dream_{occurrence.dream.id}'
+    # Add thing nodes and edges
+    things_added = set()
+    for occurrence in ThingPatternOccurrence.objects.filter(pattern__user=request.user).select_related('thing', 'pattern'):
+        thing_id = f'thing_{occurrence.thing.id}'
         
-        # Add dream node if not already added
-        if dream_id not in dreams_added:
+        # Add thing node if not already added
+        if thing_id not in things_added:
             nodes.append({
-                'id': dream_id,
-                'label': occurrence.dream.title or f'Dream {occurrence.dream.dream_date}',
-                'type': 'dream',
-                'group': 'dream',
+                'id': thing_id,
+                'label': occurrence.thing.title or f'Thing {occurrence.thing.thing_date}',
+                'type': 'thing',
+                'group': 'thing',
                 'size': 15
             })
-            dreams_added.add(dream_id)
+            things_added.add(thing_id)
         
-        # Add edge between dream and pattern
+        # Add edge between thing and pattern
         edges.append({
-            'from': dream_id,
+            'from': thing_id,
             'to': f'pattern_{occurrence.pattern.id}',
             'strength': occurrence.strength
         })
     
-    # Find connections between patterns through shared dreams
+    # Find connections between patterns through shared things
     pattern_connections = {}
-    for dream in Dream.objects.filter(user=request.user):
-        dream_patterns = list(dream.pattern_occurrences.values_list('pattern_id', flat=True))
-        for i in range(len(dream_patterns)):
-            for j in range(i + 1, len(dream_patterns)):
-                key = tuple(sorted([dream_patterns[i], dream_patterns[j]]))
+    for thing in Thing.objects.filter(user=request.user):
+        thing_patterns = list(thing.pattern_occurrences.values_list('pattern_id', flat=True))
+        for i in range(len(thing_patterns)):
+            for j in range(i + 1, len(thing_patterns)):
+                key = tuple(sorted([thing_patterns[i], thing_patterns[j]]))
                 pattern_connections[key] = pattern_connections.get(key, 0) + 1
     
     # Add edges between patterns
     for (p1, p2), count in pattern_connections.items():
-        if count >= 2:  # Only show connections with 2+ shared dreams
+        if count >= 2:  # Only show connections with 2+ shared things
             edges.append({
                 'from': f'pattern_{p1}',
                 'to': f'pattern_{p2}',

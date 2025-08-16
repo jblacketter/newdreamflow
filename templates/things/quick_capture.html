@@ -1,0 +1,853 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if thing %}Edit{% else %}Write{% endif %}{% endblock %}
+
+{% block extra_head %}
+<style>
+    * {
+        -webkit-appearance: none;
+    }
+    
+    :root {
+        --write-bg: #ffffff;
+        --write-text: #000000;
+        --write-accent: #5b21b6;
+        --write-muted: #374151;
+        --write-border: #d1d5db;
+    }
+
+    @media (prefers-color-scheme: dark) {
+        :root {
+            --write-bg: #0f0f0f;
+            --write-text: #f5f5f5;
+            --write-accent: #818cf8;
+            --write-muted: #9ca3af;
+            --write-border: #2d2d2d;
+        }
+    }
+
+    body.quick-capture {
+        background: #ffffff;
+        color: #000000;
+    }
+
+    .write-container {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 2rem 1rem;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .write-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        opacity: 0.6;
+        transition: opacity 0.3s;
+    }
+
+    .write-header:hover {
+        opacity: 1;
+    }
+
+    .write-status {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        font-size: 0.875rem;
+        color: var(--write-muted);
+        font-weight: 500;
+    }
+
+    .save-indicator {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .save-indicator.saving {
+        color: var(--write-accent);
+    }
+
+    .save-indicator.saved {
+        color: var(--write-muted);
+    }
+
+    .word-count {
+        color: var(--write-muted);
+    }
+
+    .write-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .action-btn {
+        padding: 0.5rem 1rem;
+        background: #f9fafb;
+        border: 2px solid #374151;
+        border-radius: 0.375rem;
+        color: #000000 !important;
+        font-size: 0.875rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-decoration: none !important;
+    }
+
+    .action-btn:hover {
+        background: #5b21b6;
+        color: #ffffff !important;
+        border-color: #5b21b6;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+    
+    @media (prefers-color-scheme: dark) {
+        .action-btn {
+            background: #1f2937;
+            border-color: #6b7280;
+            color: #ffffff !important;
+        }
+        
+        .action-btn:hover {
+            background: #7c3aed;
+            border-color: #7c3aed;
+        }
+    }
+
+    .write-area {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    #content-textarea {
+        width: 100%;
+        min-height: 400px;
+        padding: 0;
+        border: none;
+        outline: none;
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        font-size: 1.25rem;
+        line-height: 1.8;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        font-weight: 400;
+        resize: none;
+        overflow-y: hidden;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
+        -webkit-text-fill-color: #000000 !important;
+        opacity: 1 !important;
+        caret-color: #000000 !important;
+    }
+    
+    @media (prefers-color-scheme: dark) {
+        #content-textarea {
+            background-color: #0f0f0f;
+            color: #ffffff !important;
+            -webkit-text-fill-color: #ffffff !important;
+        }
+    }
+
+    #content-textarea::placeholder {
+        color: var(--write-muted);
+        opacity: 0.6;
+        font-weight: 300;
+    }
+    
+    #title-input {
+        width: 100%;
+        padding: 0 0 0.5rem 0;
+        margin-bottom: 1rem;
+        border: none;
+        border-bottom: 1px solid var(--write-border);
+        outline: none;
+        background: transparent;
+        color: #000000 !important;
+        font-size: 1.75rem;
+        font-weight: 600;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        -webkit-text-fill-color: #000000 !important;
+    }
+    
+    #title-input::placeholder {
+        color: var(--write-muted);
+        opacity: 0.4;
+        font-weight: 400;
+    }
+    
+    @media (prefers-color-scheme: dark) {
+        #title-input {
+            color: #ffffff !important;
+            -webkit-text-fill-color: #ffffff !important;
+        }
+    }
+
+    /* Focus mode styles */
+    body.focus-mode .write-header {
+        opacity: 1;
+        pointer-events: all;
+    }
+    
+    body.focus-mode .write-header .write-actions {
+        opacity: 1 !important;
+        pointer-events: all !important;
+    }
+    
+    body.focus-mode #save-btn,
+    body.focus-mode #toggle-focus {
+        display: inline-block !important;
+    }
+    
+    body.focus-mode #toggle-preview,
+    body.focus-mode #view-btn,
+    body.focus-mode .write-actions a {
+        display: none !important;
+    }
+
+    body.focus-mode .write-container {
+        padding-top: 4rem;
+    }
+    
+    body.focus-mode #title-input {
+        display: none;
+    }
+    
+    body.focus-mode .image-upload-section {
+        display: none;
+    }
+    
+    body.focus-mode .write-status {
+        display: none;
+    }
+
+
+    /* Image upload styles */
+    .image-upload-container {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .image-upload-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        background: #f9fafb;
+        border: 1px solid var(--write-border);
+        border-radius: 0.375rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        color: var(--write-muted);
+        font-weight: 500;
+        font-size: 0.875rem;
+    }
+    
+    .image-upload-label:hover {
+        background: var(--write-accent);
+        color: white;
+        border-color: var(--write-accent);
+    }
+    
+    @media (prefers-color-scheme: dark) {
+        .image-upload-label {
+            background: #1f2937;
+            border-color: #374151;
+        }
+    }
+    
+    .image-preview {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 1rem;
+    }
+    
+    .image-preview-item {
+        position: relative;
+        border-radius: 0.5rem;
+        overflow: hidden;
+        background: #f9fafb;
+        border: 1px solid var(--write-border);
+    }
+    
+    .image-preview-item img {
+        width: 100%;
+        height: 150px;
+        object-fit: cover;
+    }
+    
+    .image-preview-item .remove-btn {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    
+    .image-preview-item .remove-btn:hover {
+        background: rgba(239, 68, 68, 0.9);
+    }
+
+    /* Keyboard shortcuts hint */
+    .shortcuts-hint {
+        position: fixed;
+        bottom: 1rem;
+        right: 1rem;
+        padding: 0.5rem 1rem;
+        background: var(--write-bg);
+        border: 1px solid var(--write-border);
+        border-radius: 0.375rem;
+        font-size: 0.75rem;
+        color: var(--write-muted);
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+
+    .shortcuts-hint:hover {
+        opacity: 1;
+    }
+
+    /* Floating action button */
+    .fab {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: var(--write-accent);
+        color: white;
+        border: none;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        transition: all 0.3s;
+        z-index: 1000;
+    }
+
+    .fab:hover {
+        transform: scale(1.1);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Markdown preview styles */
+    .write-split {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        height: 100%;
+    }
+
+    .write-split.preview-hidden {
+        grid-template-columns: 1fr;
+    }
+
+    .markdown-preview {
+        padding: 0;
+        overflow-y: auto;
+        font-size: 1.125rem;
+        line-height: 1.75;
+    }
+
+    .markdown-preview h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        margin: 1.5rem 0 1rem;
+    }
+
+    .markdown-preview h2 {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin: 1.25rem 0 0.75rem;
+    }
+
+    .markdown-preview h3 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin: 1rem 0 0.5rem;
+    }
+
+    .markdown-preview p {
+        margin: 0.75rem 0;
+    }
+
+    .markdown-preview ul,
+    .markdown-preview ol {
+        margin: 0.75rem 0;
+        padding-left: 1.5rem;
+    }
+
+    .markdown-preview li {
+        margin: 0.25rem 0;
+    }
+
+    .markdown-preview blockquote {
+        border-left: 4px solid var(--write-border);
+        padding-left: 1rem;
+        margin: 1rem 0;
+        color: var(--write-muted);
+        font-style: italic;
+    }
+
+    .markdown-preview code {
+        background: var(--write-border);
+        padding: 0.125rem 0.25rem;
+        border-radius: 0.25rem;
+        font-family: 'Courier New', monospace;
+        font-size: 0.9em;
+    }
+
+    .markdown-preview pre {
+        background: var(--write-border);
+        padding: 1rem;
+        border-radius: 0.375rem;
+        overflow-x: auto;
+        margin: 1rem 0;
+    }
+
+    .markdown-preview pre code {
+        background: transparent;
+        padding: 0;
+    }
+
+    .markdown-preview a {
+        color: var(--write-accent);
+        text-decoration: underline;
+    }
+
+    .markdown-preview strong {
+        font-weight: 600;
+    }
+
+    .markdown-preview em {
+        font-style: italic;
+    }
+
+    .markdown-preview hr {
+        border: none;
+        border-top: 1px solid var(--write-border);
+        margin: 2rem 0;
+    }
+
+    /* Metadata controls styling */
+    .metadata-controls select,
+    .metadata-controls input[type="date"] {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid var(--write-border);
+        border-radius: 0.375rem;
+        background: white;
+        color: #000000;
+        font-size: 0.875rem;
+    }
+    
+    #image-url-input {
+        padding: 0.5rem 1rem;
+        border: 1px solid var(--write-border);
+        border-radius: 0.375rem;
+        font-size: 0.875rem;
+        background: white;
+        color: #000000;
+    }
+    
+    #add-url-btn {
+        padding: 0.5rem 1rem !important;
+        font-size: 0.875rem !important;
+    }
+    
+    @media (prefers-color-scheme: dark) {
+        .metadata-controls select,
+        .metadata-controls input[type="date"],
+        #image-url-input {
+            background: #1f2937;
+            color: #ffffff;
+            border-color: #374151;
+        }
+    }
+
+    /* Mobile optimizations */
+    @media (max-width: 640px) {
+        .write-container {
+            padding: 1rem;
+        }
+
+        #content-textarea {
+            font-size: 1rem;
+        }
+
+        .write-header {
+            flex-direction: column;
+            gap: 1rem;
+            align-items: flex-start;
+        }
+
+        .fab {
+            bottom: 1rem;
+            right: 1rem;
+        }
+
+        .write-split {
+            grid-template-columns: 1fr;
+        }
+
+        .markdown-preview {
+            display: none;
+        }
+        
+        .metadata-controls {
+            flex-direction: column;
+        }
+        
+        .image-upload-container > div:first-child {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        
+        #image-url-input {
+            width: 100%;
+        }
+        
+        #add-url-btn {
+            width: 100%;
+        }
+    }
+</style>
+
+<!-- Include marked.js for Markdown parsing -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="write-container">
+    <div class="write-header">
+        <div class="write-status">
+            <div class="word-count">
+                <span id="word-count">0</span> words
+            </div>
+        </div>
+        <div class="write-actions">
+            <button type="button" class="action-btn" id="save-btn" style="background: var(--write-accent); color: white; border-color: var(--write-accent);">{% if thing %}Update{% else %}Save{% endif %}</button>
+            <button class="action-btn" id="toggle-preview">Preview</button>
+            <button class="action-btn" id="toggle-focus">Focus</button>
+            <button class="action-btn" id="view-btn" style="display: none;">View</button>
+        </div>
+    </div>
+
+    <form method="post" id="capture-form" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="hidden" name="thing_id" id="thing_id" value="{% if thing %}{{ thing.pk }}{% else %}new{% endif %}">
+        
+        <div class="write-area">
+            <input 
+                type="text"
+                id="title-input"
+                name="title"
+                placeholder="Untitled (optional)"
+                value="{% if thing %}{{ thing.title }}{% endif %}"
+                style="color: #000000 !important; -webkit-text-fill-color: #000000 !important;"
+            >
+            <div class="write-split preview-hidden" id="write-split">
+                <textarea 
+                    id="content-textarea"
+                    name="content"
+                    placeholder="Start writing..."
+                    style="color: #000000 !important; -webkit-text-fill-color: #000000 !important; background-color: #ffffff !important;"
+                    autofocus
+                >{% if thing %}{{ thing.description }}{% endif %}</textarea>
+                <div class="markdown-preview" id="markdown-preview" style="display: none;"></div>
+            </div>
+        </div>
+        
+        <!-- Metadata and Images Section -->
+        <div class="metadata-section" style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--write-border);">
+            <!-- Privacy and Date Controls -->
+            <div class="metadata-controls" style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
+                <div style="flex: 1;">
+                    <label for="privacy_level" style="display: block; font-size: 0.875rem; color: var(--write-muted); margin-bottom: 0.25rem;">Privacy</label>
+                    <select name="privacy_level" id="privacy_level">
+                        <option value="private" {% if not thing or thing.privacy_level == 'private' %}selected{% endif %}>Private</option>
+                        <option value="specific_users" {% if thing and thing.privacy_level == 'specific_users' %}selected{% endif %}>Specific Users</option>
+                        <option value="groups" {% if thing and thing.privacy_level == 'groups' %}selected{% endif %}>Groups</option>
+                        <option value="community" {% if thing and thing.privacy_level == 'community' %}selected{% endif %}>Community</option>
+                    </select>
+                </div>
+                <div style="flex: 1;">
+                    <label for="thing_date" style="display: block; font-size: 0.875rem; color: var(--write-muted); margin-bottom: 0.25rem;">Date</label>
+                    <input type="date" name="thing_date" id="thing_date" value="{% if thing %}{{ thing.thing_date|date:'Y-m-d' }}{% else %}{% now 'Y-m-d' %}{% endif %}">
+                </div>
+            </div>
+            
+            <!-- Image Upload Section -->
+            <div class="image-upload-container">
+                <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem;">
+                    <label for="image-upload" class="image-upload-label">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <span>Upload images</span>
+                    </label>
+                    <span style="color: var(--write-muted); font-size: 0.875rem;">or</span>
+                    <input type="url" id="image-url-input" placeholder="Paste image URL" style="flex: 1;">
+                    <button type="button" id="add-url-btn" class="action-btn" style="padding: 0.5rem 1rem;">Add URL</button>
+                </div>
+                <input type="file" id="image-upload" name="images" multiple accept="image/*" style="display: none;">
+                <div id="image-preview" class="image-preview"></div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="shortcuts-hint">
+    <kbd>Cmd</kbd> + <kbd>Enter</kbd> to save
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const textarea = document.getElementById('content-textarea');
+    const wordCount = document.getElementById('word-count');
+    const thingIdInput = document.getElementById('thing_id');
+    const form = document.getElementById('capture-form');
+    const viewBtn = document.getElementById('view-btn');
+    const toggleFocus = document.getElementById('toggle-focus');
+    const togglePreview = document.getElementById('toggle-preview');
+    const writeSplit = document.getElementById('write-split');
+    const markdownPreview = document.getElementById('markdown-preview');
+    const titleInput = document.getElementById('title-input');
+    const saveBtn = document.getElementById('save-btn');
+    
+    let previewVisible = false;
+    
+    // Auto-resize textarea
+    function autoResize() {
+        textarea.style.height = 'auto';
+        textarea.style.height = textarea.scrollHeight + 'px';
+    }
+    
+    // Update word count
+    function updateWordCount() {
+        const words = textarea.value.trim().split(/\s+/).filter(word => word.length > 0);
+        wordCount.textContent = words.length;
+    }
+    
+    // Update markdown preview
+    function updatePreview() {
+        if (previewVisible && typeof marked !== 'undefined') {
+            const html = marked.parse(textarea.value);
+            markdownPreview.innerHTML = html;
+        }
+    }
+    
+    // Auto-save function (disabled - manual save only with Cmd+Enter)
+    // Keeping the function for potential future use
+    /*
+    function autoSave() {
+        clearTimeout(saveTimeout);
+        
+        const content = textarea.value;
+        if (content === lastSavedContent) return;
+        
+        saveIndicator.classList.remove('saved');
+        saveIndicator.classList.add('saving');
+        saveText.textContent = 'Saving...';
+        
+        saveTimeout = setTimeout(() => {
+            const formData = new FormData();
+            formData.append('content', content);
+            formData.append('thing_id', thingIdInput.value);
+            formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+            
+            fetch(window.location.pathname, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    saveIndicator.classList.remove('saving');
+                    saveIndicator.classList.add('saved');
+                    saveText.textContent = 'Saved at ' + data.saved_at;
+                    lastSavedContent = content;
+                    
+                    if (data.thing_id && thingIdInput.value === 'new') {
+                        thingIdInput.value = data.thing_id;
+                        viewBtn.style.display = 'inline-block';
+                        viewBtn.href = '/things/' + data.thing_id + '/';
+                    }
+                }
+            })
+            .catch(error => {
+                saveIndicator.classList.remove('saving');
+                saveText.textContent = 'Error saving';
+                console.error('Save error:', error);
+            });
+        }, 1000); // Debounce for 1 second
+    }
+    */
+    
+    // Event listeners
+    textarea.addEventListener('input', () => {
+        autoResize();
+        updateWordCount();
+        updatePreview();
+        // Removed autoSave - manual save only
+    });
+    
+    // Save button click handler
+    saveBtn.addEventListener('click', () => {
+        form.submit();
+    });
+    
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+        // Cmd/Ctrl + Enter to save and view
+        if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+            e.preventDefault();
+            form.submit();
+        }
+        
+        // Escape to toggle focus mode
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            document.body.classList.toggle('focus-mode');
+        }
+    });
+    
+    // Toggle focus mode
+    toggleFocus.addEventListener('click', () => {
+        document.body.classList.toggle('focus-mode');
+        toggleFocus.textContent = document.body.classList.contains('focus-mode') ? 'Exit Focus' : 'Focus';
+    });
+    
+    // Toggle markdown preview
+    togglePreview.addEventListener('click', () => {
+        previewVisible = !previewVisible;
+        
+        if (previewVisible) {
+            writeSplit.classList.remove('preview-hidden');
+            markdownPreview.style.display = 'block';
+            togglePreview.textContent = 'Hide Preview';
+            updatePreview();
+        } else {
+            writeSplit.classList.add('preview-hidden');
+            markdownPreview.style.display = 'none';
+            togglePreview.textContent = 'Preview';
+        }
+    });
+    
+    // View button for saved things
+    if (thingIdInput.value && thingIdInput.value !== 'new') {
+        viewBtn.style.display = 'inline-block';
+        viewBtn.onclick = () => {
+            window.location.href = '/things/' + thingIdInput.value + '/';
+        };
+    }
+    
+    // Image upload handling
+    const imageUpload = document.getElementById('image-upload');
+    const imagePreview = document.getElementById('image-preview');
+    const imageUrlInput = document.getElementById('image-url-input');
+    const addUrlBtn = document.getElementById('add-url-btn');
+    let selectedImages = [];
+    let imageUrls = [];
+    
+    // Handle file uploads
+    imageUpload.addEventListener('change', function(e) {
+        const files = Array.from(e.target.files);
+        files.forEach(file => {
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    addImagePreview(e.target.result, file.name, 'file');
+                };
+                reader.readAsDataURL(file);
+                selectedImages.push(file);
+            }
+        });
+    });
+    
+    // Handle URL additions
+    addUrlBtn.addEventListener('click', function() {
+        const url = imageUrlInput.value.trim();
+        if (url && isValidUrl(url)) {
+            addImagePreview(url, url, 'url');
+            imageUrls.push(url);
+            imageUrlInput.value = '';
+        }
+    });
+    
+    // Allow Enter key to add URL
+    imageUrlInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            addUrlBtn.click();
+        }
+    });
+    
+    // Function to add image preview
+    function addImagePreview(src, identifier, type) {
+        const previewItem = document.createElement('div');
+        previewItem.className = 'image-preview-item';
+        previewItem.innerHTML = `
+            <img src="${src}" alt="${identifier}">
+            <button type="button" class="remove-btn" data-identifier="${identifier}" data-type="${type}">×</button>
+            ${type === 'url' ? '<input type="hidden" name="image_urls[]" value="' + src + '">' : ''}
+        `;
+        imagePreview.appendChild(previewItem);
+        
+        // Add click handler for remove button
+        previewItem.querySelector('.remove-btn').addEventListener('click', function() {
+            previewItem.remove();
+            if (type === 'file') {
+                selectedImages = selectedImages.filter(img => img.name !== identifier);
+            } else {
+                imageUrls = imageUrls.filter(url => url !== identifier);
+            }
+        });
+    }
+    
+    // Validate URL
+    function isValidUrl(string) {
+        try {
+            new URL(string);
+            return true;
+        } catch (_) {
+            return false;
+        }
+    }
+    
+    // Initial setup
+    autoResize();
+    updateWordCount();
+    document.body.classList.add('quick-capture');
+    
+    // Check for focus mode in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('focus') === 'true') {
+        document.body.classList.add('focus-mode');
+        toggleFocus.textContent = 'Exit Focus';
+    }
+});
+</script>
+{% endblock %}

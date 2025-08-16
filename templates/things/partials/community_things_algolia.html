@@ -1,18 +1,8 @@
-{% extends 'base.html' %}
-
-{% block title %}Community Dreams - NewDreamFlow{% endblock %}
-
-{% block extra_head %}
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/instantsearch.css@8/themes/satellite-min.css">
-<script src="https://cdn.jsdelivr.net/npm/algoliasearch@5/dist/algoliasearch.umd.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/instantsearch.js@4"></script>
-{% endblock %}
-
-{% block content %}
+<!-- Algolia Search Container -->
 <div class="px-4 py-5 sm:px-6">
     <div class="mb-6">
-        <h1 class="text-2xl font-bold mb-4">Community Dreams</h1>
-        <p class="text-gray-600">Explore dreams shared by our community members</p>
+        <h1 class="text-2xl font-bold mb-4">Community Things</h1>
+        <p class="text-gray-600">Explore things shared by our community members</p>
     </div>
     
     <!-- Algolia Search Container -->
@@ -28,11 +18,6 @@
             <div class="bg-white rounded-lg shadow p-4" style="background-color: var(--bg-secondary);">
                 <h3 class="font-semibold mb-4">Filters</h3>
                 
-                <!-- Mood Filter -->
-                <div class="mb-6">
-                    <h4 class="text-sm font-medium mb-2">Mood</h4>
-                    <div id="mood-refinement"></div>
-                </div>
                 
                 <!-- Themes Filter -->
                 <div class="mb-6">
@@ -40,11 +25,6 @@
                     <div id="themes-refinement"></div>
                 </div>
                 
-                <!-- Lucidity Filter -->
-                <div class="mb-6">
-                    <h4 class="text-sm font-medium mb-2">Lucidity Level</h4>
-                    <div id="lucidity-refinement"></div>
-                </div>
                 
                 <!-- Clear Filters -->
                 <div id="clear-refinements"></div>
@@ -63,6 +43,7 @@
 </div>
 
 <!-- Hit Template -->
+{% verbatim %}
 <script type="text/html" id="hit-template">
     <div class="bg-white rounded-lg shadow hover:shadow-lg transition mb-4" style="background-color: var(--bg-secondary);">
         <div class="p-6">
@@ -73,13 +54,13 @@
                 </div>
                 <div>
                     <p class="font-semibold">{{user_username}}</p>
-                    <p class="text-xs text-gray-500">{{#helpers.formatDate}}{{dream_date}}{{/helpers.formatDate}}</p>
+                    <p class="text-xs text-gray-500">{{#helpers.formatDate}}{{thing_date}}{{/helpers.formatDate}}</p>
                 </div>
             </div>
             
-            <!-- Dream Content -->
+            <!-- Thing Content -->
             <h3 class="font-semibold mb-2">
-                <a href="/dreams/{{objectID}}/" class="text-purple-600 hover:text-purple-800">
+                <a href="/things/{{objectID}}/" class="text-purple-600 hover:text-purple-800">
                     {{#helpers.highlight}}{ "attribute": "title", "highlightedTagName": "mark" }{{/helpers.highlight}}
                 </a>
             </h3>
@@ -90,17 +71,11 @@
             
             <!-- Metadata -->
             <div class="flex flex-wrap gap-2 text-xs">
-                {{#mood}}
-                <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                    {{mood}}
+                {{#privacy_level}}
+                <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded">
+                    {{privacy_level}}
                 </span>
-                {{/mood}}
-                
-                {{#lucidity_level}}
-                <span class="bg-green-100 text-green-800 px-2 py-1 rounded">
-                    Lucidity: {{lucidity_level}}/10
-                </span>
-                {{/lucidity_level}}
+                {{/privacy_level}}
                 
                 {{#has_voice}}
                 <span class="bg-indigo-100 text-indigo-800 px-2 py-1 rounded">
@@ -125,10 +100,11 @@
         </div>
     </div>
 </script>
+{% endverbatim %}
 
+{{ algolia_config|json_script:"algolia-config" }}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const algoliaConfig = {{ algolia_config|json_script:"algolia-config" }};
     const configElement = document.getElementById('algolia-config');
     const config = JSON.parse(configElement.textContent);
     
@@ -148,7 +124,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Search box
         instantsearch.widgets.searchBox({
             container: '#searchbox',
-            placeholder: 'Search community dreams...',
+            placeholder: 'Search community things...',
             cssClasses: {
                 root: 'mb-6',
                 form: 'relative',
@@ -162,11 +138,11 @@ document.addEventListener('DOMContentLoaded', function() {
         instantsearch.widgets.stats({
             container: '#stats',
             templates: {
-                text: `
-                    {{#hasNoResults}}No dreams found{{/hasNoResults}}
-                    {{#hasOneResult}}1 dream found{{/hasOneResult}}
-                    {{#hasManyResults}}{{#helpers.formatNumber}}{{nbHits}}{{/helpers.formatNumber}} dreams found{{/hasManyResults}}
-                `,
+                text: {% verbatim %}`
+                    {{#hasNoResults}}No things found{{/hasNoResults}}
+                    {{#hasOneResult}}1 thing found{{/hasOneResult}}
+                    {{#hasManyResults}}{{#helpers.formatNumber}}{{nbHits}}{{/helpers.formatNumber}} things found{{/hasManyResults}}
+                `{% endverbatim %},
             },
         }),
         
@@ -175,28 +151,16 @@ document.addEventListener('DOMContentLoaded', function() {
             container: '#hits',
             templates: {
                 item: document.getElementById('hit-template').innerHTML,
-                empty: `
+                empty: {% verbatim %}`
                     <div class="bg-white rounded-lg shadow p-12 text-center" style="background-color: var(--bg-secondary);">
                         <div class="text-5xl mb-4">🌍</div>
-                        <h3 class="text-xl font-semibold mb-2">No community dreams found</h3>
+                        <h3 class="text-xl font-semibold mb-2">No community things found</h3>
                         <p class="text-gray-600">Try adjusting your search or filters.</p>
                     </div>
-                `,
+                `{% endverbatim %},
             },
         }),
         
-        // Mood refinement
-        instantsearch.widgets.refinementList({
-            container: '#mood-refinement',
-            attribute: 'mood',
-            limit: 10,
-            cssClasses: {
-                list: 'space-y-1',
-                item: 'text-sm',
-                checkbox: 'mr-2',
-                count: 'text-gray-500 text-xs ml-1',
-            },
-        }),
         
         // Themes refinement
         instantsearch.widgets.refinementList({
@@ -211,15 +175,6 @@ document.addEventListener('DOMContentLoaded', function() {
             },
         }),
         
-        // Lucidity range
-        instantsearch.widgets.rangeSlider({
-            container: '#lucidity-refinement',
-            attribute: 'lucidity_level',
-            pips: false,
-            cssClasses: {
-                root: 'mt-2',
-            },
-        }),
         
         // Clear refinements
         instantsearch.widgets.clearRefinements({
@@ -270,4 +225,3 @@ mark {
     border-radius: 0.2em;
 }
 </style>
-{% endblock %}

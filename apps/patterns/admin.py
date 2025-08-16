@@ -1,9 +1,9 @@
 from django.contrib import admin
-from .models import DreamPattern, DreamPatternOccurrence, PatternConnection
+from .models import ThingPattern, ThingPatternOccurrence, PatternConnection
 
 
-@admin.register(DreamPattern)
-class DreamPatternAdmin(admin.ModelAdmin):
+@admin.register(ThingPattern)
+class ThingPatternAdmin(admin.ModelAdmin):
     list_display = ['name', 'user', 'pattern_type', 'confidence_score', 'occurrence_count', 'created_at']
     list_filter = ['pattern_type', 'confidence_score', 'created_at']
     search_fields = ['name', 'description']
@@ -26,12 +26,12 @@ class DreamPatternAdmin(admin.ModelAdmin):
     )
 
 
-@admin.register(DreamPatternOccurrence)
-class DreamPatternOccurrenceAdmin(admin.ModelAdmin):
-    list_display = ['pattern', 'dream', 'strength', 'created_at']
+@admin.register(ThingPatternOccurrence)
+class ThingPatternOccurrenceAdmin(admin.ModelAdmin):
+    list_display = ['pattern', 'thing', 'strength', 'created_at']
     list_filter = ['strength', 'created_at']
     search_fields = ['context']
-    raw_id_fields = ['dream', 'pattern']
+    raw_id_fields = ['thing', 'pattern']
 
 
 @admin.register(PatternConnection)

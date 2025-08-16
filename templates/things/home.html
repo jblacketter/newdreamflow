@@ -7,7 +7,7 @@
     {% if user.is_authenticated %}
         <div class="text-center mb-8">
             <h1 class="text-3xl font-bold mb-2">Welcome back, {{ user.username }}!</h1>
-            <p class="text-gray-600">You have recorded {{ total_dreams }} thing{{ total_dreams|pluralize }}.</p>
+            <p class="text-gray-600">You have recorded {{ total_things }} thing{{ total_things|pluralize }}.</p>
         </div>
         
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -15,10 +15,10 @@
             <div class="bg-white rounded-lg shadow p-6" style="background-color: var(--bg-secondary);">
                 <h2 class="text-xl font-semibold mb-4">Quick Actions</h2>
                 <div class="space-y-3">
-                    <a href="{% url 'dreams:create' %}" class="block w-full text-center bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 transition">
+                    <a href="{% url 'things:create' %}" class="block w-full text-center bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 transition">
                         Record New Thing
                     </a>
-                    <a href="{% url 'dreams:record_voice' %}" class="block w-full text-center bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 transition">
+                    <a href="{% url 'things:record_voice' %}" class="block w-full text-center bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 transition">
                         Voice Record Thing
                     </a>
                     <a href="{% url 'patterns:dashboard' %}" class="block w-full text-center bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition">
@@ -30,26 +30,26 @@
             <!-- Recent Things -->
             <div class="bg-white rounded-lg shadow p-6" style="background-color: var(--bg-secondary);">
                 <h2 class="text-xl font-semibold mb-4">Recent Things</h2>
-                {% if recent_dreams %}
+                {% if recent_things %}
                     <div class="space-y-3">
-                        {% for dream in recent_dreams %}
+                        {% for thing in recent_things %}
                         <div class="border-b pb-2">
                             <div class="flex justify-between items-start">
                                 <div>
-                                    <a href="{% url 'dreams:detail' dream.pk %}" class="text-purple-600 hover:text-purple-800 font-medium">
-                                        {{ dream.title|default:"Untitled Thing" }}
+                                    <a href="{% url 'things:detail' thing.pk %}" class="text-purple-600 hover:text-purple-800 font-medium">
+                                        {{ thing.title|default:"Untitled Thing" }}
                                     </a>
-                                    <p class="text-sm text-gray-500">{{ dream.dream_date }}</p>
+                                    <p class="text-sm text-gray-500">{{ thing.thing_date }}</p>
                                 </div>
                                 <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium 
-                                    {% if dream.privacy_level == 'private' %}privacy-indicator-private text-white{% elif dream.privacy_level == 'community' %}privacy-indicator-community text-white{% else %}privacy-indicator-shared text-white{% endif %}">
-                                    {{ dream.get_privacy_level_display }}
+                                    {% if thing.privacy_level == 'private' %}privacy-indicator-private text-white{% elif thing.privacy_level == 'community' %}privacy-indicator-community text-white{% else %}privacy-indicator-shared text-white{% endif %}">
+                                    {{ thing.get_privacy_level_display }}
                                 </span>
                             </div>
                         </div>
                         {% endfor %}
                     </div>
-                    <a href="{% url 'dreams:list' %}" class="block mt-4 text-center text-purple-600 hover:text-purple-800">
+                    <a href="{% url 'things:list' %}" class="block mt-4 text-center text-purple-600 hover:text-purple-800">
                         View All Things →
                     </a>
                 {% else %}

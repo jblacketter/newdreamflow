@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Record Dream - NewDreamFlow{% endblock %}
+{% block title %}Record Thing - NewThingFlow{% endblock %}
 
 {% block extra_head %}
 <style>
@@ -44,14 +44,14 @@
 {% block content %}
 <div class="max-w-2xl mx-auto px-4 py-5">
     <div class="bg-white rounded-lg shadow-lg p-6" style="background-color: var(--bg-secondary);">
-        <h1 class="text-2xl font-bold mb-6 text-center">Voice Record Your Dream</h1>
+        <h1 class="text-2xl font-bold mb-6 text-center">Voice Record Your Thing</h1>
         
         <div x-data="voiceRecorder()" x-init="init()">
             <!-- Recording Status -->
             <div class="text-center mb-8">
                 <div x-show="!isRecording && !audioBlob" class="space-y-4">
                     <div class="text-6xl">🎙️</div>
-                    <p class="text-gray-600">Click the button below to start recording your dream</p>
+                    <p class="text-gray-600">Click the button below to start recording your thing</p>
                 </div>
                 
                 <div x-show="isRecording" class="space-y-4">
@@ -93,12 +93,12 @@
                 </button>
                 
                 <button x-show="audioBlob && !isRecording" 
-                        @click="saveDream()"
+                        @click="saveThing()"
                         class="bg-green-600 text-white py-3 px-6 rounded-md hover:bg-green-700 transition flex items-center space-x-2">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                     </svg>
-                    <span>Save Dream</span>
+                    <span>Save Thing</span>
                 </button>
             </div>
             
@@ -108,21 +108,21 @@
                 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Title</label>
-                    <input type="text" x-model="dreamTitle" 
-                           placeholder="Give your dream a title"
+                    <input type="text" x-model="thingTitle" 
+                           placeholder="Give your thing a title"
                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-purple-500 focus:border-purple-500">
                 </div>
                 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Mood</label>
-                    <input type="text" x-model="dreamMood" 
-                           placeholder="How did the dream feel?"
+                    <input type="text" x-model="thingMood" 
+                           placeholder="How did this make you feel?"
                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-purple-500 focus:border-purple-500">
                 </div>
                 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Tags</label>
-                    <input type="text" x-model="dreamTags" 
+                    <input type="text" x-model="thingTags" 
                            placeholder="Enter tags separated by commas"
                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-purple-500 focus:border-purple-500">
                 </div>
@@ -153,9 +153,9 @@ function voiceRecorder() {
         recordingTime: '0:00',
         startTime: null,
         timerInterval: null,
-        dreamTitle: '',
-        dreamMood: '',
-        dreamTags: '',
+        thingTitle: ''
+        thingMood: ''
+        thingTags: ''
         
         init() {
             // Check for browser support
@@ -225,18 +225,18 @@ function voiceRecorder() {
             }
         },
         
-        async saveDream() {
+        async saveThing() {
             if (!this.audioBlob) return;
             
             const formData = new FormData();
-            formData.append('voice_recording', this.audioBlob, 'dream_recording.wav');
-            formData.append('title', this.dreamTitle);
-            formData.append('mood', this.dreamMood);
-            formData.append('tags', this.dreamTags);
+            formData.append('voice_recording', this.audioBlob, 'thing_recording.wav');
+            formData.append('title', this.thingTitle);
+            formData.append('mood', this.thingMood);
+            formData.append('tags', this.thingTags);
             formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
             
             try {
-                const response = await fetch('{% url "dreams:record_voice" %}', {
+                const response = await fetch('{% url "things:record_voice" %}', {
                     method: 'POST',
                     body: formData
                 });
@@ -246,14 +246,14 @@ function voiceRecorder() {
                     if (data.redirect_url) {
                         window.location.href = data.redirect_url;
                     } else {
-                        window.location.href = '{% url "dreams:list" %}';
+                        window.location.href = '{% url "things:list" %}';
                     }
                 } else {
-                    alert('Error saving dream. Please try again.');
+                    alert('Error saving thing. Please try again.');
                 }
             } catch (error) {
-                console.error('Error saving dream:', error);
-                alert('Error saving dream. Please try again.');
+                console.error('Error saving thing:', error);
+                alert('Error saving thing. Please try again.');
             }
         }
     }

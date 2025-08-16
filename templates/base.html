@@ -38,7 +38,7 @@
             --shadow-color: rgba(0, 0, 0, 0.3);
         }
         
-        /* Clouds Theme - Soft and dreamy */
+        /* Clouds Theme - Soft and ethereal */
         .theme-clouds {
             --bg-primary: #f0f9ff;
             --bg-secondary: #e0f2fe;
@@ -201,10 +201,10 @@
                     </div>
                     {% if user.is_authenticated %}
                     <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
-                        <a href="{% url 'dreams:list' %}" class="border-transparent hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                        <a href="{% url 'things:list' %}" class="border-transparent hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
                             My Things
                         </a>
-                        <a href="{% url 'dreams:quick_capture' %}" class="border-transparent hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                        <a href="{% url 'things:quick_capture' %}" class="border-transparent hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
                             New Thing
                         </a>
                         <a href="{% url 'patterns:dashboard' %}" class="border-transparent hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
@@ -213,7 +213,7 @@
                         <a href="{% url 'sharing:groups' %}" class="border-transparent hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
                             Groups
                         </a>
-                        <a href="{% url 'dreams:community' %}" class="border-transparent hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                        <a href="{% url 'things:community' %}" class="border-transparent hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
                             Community
                         </a>
                     </div>
@@ -224,8 +224,8 @@
                         <div class="flex items-center space-x-3">
                             <span class="text-sm text-gray-600">{{ user.username }}</span>
                             <a href="{% url 'users:profile' %}" class="p-1 rounded-full hover:bg-gray-100" title="Profile">
-                                {% if user.dream_face %}
-                                    <img class="h-8 w-8 rounded-full" src="{{ user.dream_face.url }}" alt="{{ user.username }}">
+                                {% if user.thing_face %}
+                                    <img class="h-8 w-8 rounded-full" src="{{ user.thing_face.url }}" alt="{{ user.username }}">
                                 {% else %}
                                     <div class="h-8 w-8 rounded-full bg-purple-500 flex items-center justify-center text-white text-sm font-semibold">
                                         {{ user.username.0|upper }}
@@ -263,7 +263,7 @@
     
     <!-- Floating Action Button for Quick Capture -->
     {% if user.is_authenticated %}
-    <a href="{% url 'dreams:quick_capture' %}" 
+    <a href="{% url 'things:quick_capture' %}" 
        id="fab-quick-capture"
        class="fixed bottom-6 right-6 w-14 h-14 bg-purple-600 hover:bg-purple-700 text-white rounded-full shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-110 z-40"
        title="Quick capture (Shortcut: /)">
@@ -304,7 +304,7 @@
             // Press "/" to open quick capture (when not in an input field)
             if (e.key === '/' && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
                 e.preventDefault();
-                window.location.href = '{% url "dreams:quick_capture" %}';
+                window.location.href = '{% url "things:quick_capture" %}';
             }
         });
     </script>

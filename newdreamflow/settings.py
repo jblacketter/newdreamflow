@@ -47,7 +47,7 @@ INSTALLED_APPS = [
     'algoliasearch_django',
     # Local apps
     'apps.users',
-    'apps.dreams',
+    'apps.things',
     'apps.patterns',
     'apps.sharing',
 ]

@@ -3,14 +3,14 @@ from django.db import models
 
 
 class User(AbstractUser):
-    """Custom user model with additional fields for dream journal."""
+    """Custom user model with additional fields for thing journal."""
     
     # Profile customization
-    dream_face = models.ImageField(
-        upload_to='dream_faces/', 
+    thing_face = models.ImageField(
+        upload_to='thing_faces/', 
         null=True, 
         blank=True,
-        help_text="Avatar displayed on shared dreams"
+        help_text="Avatar displayed on shared things"
     )
     
     # Theme preferences

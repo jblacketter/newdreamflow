@@ -1,10 +1,10 @@
 from django.db import models
 from django.conf import settings
-from apps.dreams.models import Dream
+from apps.things.models import Thing
 
 
-class DreamPattern(models.Model):
-    """AI-identified patterns across multiple dreams."""
+class ThingPattern(models.Model):
+    """AI-identified patterns across multiple things."""
     
     PATTERN_TYPES = [
         ('theme', 'Recurring Theme'),
@@ -17,7 +17,7 @@ class DreamPattern(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name='dream_patterns'
+        related_name='thing_patterns'
     )
     
     pattern_type = models.CharField(
@@ -38,26 +38,26 @@ class DreamPattern(models.Model):
     
     occurrence_count = models.IntegerField(
         default=0,
-        help_text="Number of dreams containing this pattern"
+        help_text="Number of things containing this pattern"
     )
     
     first_occurrence = models.DateField(
         null=True,
         blank=True,
-        help_text="Date of first dream with this pattern"
+        help_text="Date of first thing with this pattern"
     )
     
     last_occurrence = models.DateField(
         null=True,
         blank=True,
-        help_text="Date of most recent dream with this pattern"
+        help_text="Date of most recent thing with this pattern"
     )
     
-    # Related dreams
-    dreams = models.ManyToManyField(
-        Dream,
+    # Related things
+    things = models.ManyToManyField(
+        Thing,
         related_name='patterns',
-        through='DreamPatternOccurrence'
+        through='ThingPatternOccurrence'
     )
     
     # Visualization data
@@ -71,7 +71,7 @@ class DreamPattern(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
-        db_table = 'dream_patterns'
+        db_table = 'thing_patterns'
         ordering = ['-confidence_score', '-occurrence_count']
         unique_together = ['user', 'pattern_type', 'name']
     
@@ -79,43 +79,43 @@ class DreamPattern(models.Model):
         return f"{self.get_pattern_type_display()}: {self.name}"
 
 
-class DreamPatternOccurrence(models.Model):
-    """Tracks specific occurrences of patterns in dreams."""
+class ThingPatternOccurrence(models.Model):
+    """Tracks specific occurrences of patterns in things."""
     
-    dream = models.ForeignKey(Dream, on_delete=models.CASCADE)
-    pattern = models.ForeignKey(DreamPattern, on_delete=models.CASCADE)
+    thing = models.ForeignKey(Thing, on_delete=models.CASCADE)
+    pattern = models.ForeignKey(ThingPattern, on_delete=models.CASCADE)
     
-    # Context within the dream
+    # Context within the thing
     context = models.TextField(
         blank=True,
-        help_text="Specific context of pattern in this dream"
+        help_text="Specific context of pattern in this thing"
     )
     
     strength = models.FloatField(
         default=0.5,
-        help_text="Strength of pattern in this dream (0-1)"
+        help_text="Strength of pattern in this thing (0-1)"
     )
     
     created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
-        db_table = 'dream_pattern_occurrences'
-        unique_together = ['dream', 'pattern']
+        db_table = 'thing_pattern_occurrences'
+        unique_together = ['thing', 'pattern']
     
     def __str__(self):
-        return f"{self.pattern} in {self.dream}"
+        return f"{self.pattern} in {self.thing}"
 
 
 class PatternConnection(models.Model):
     """Connections between different patterns."""
     
     pattern1 = models.ForeignKey(
-        DreamPattern,
+        ThingPattern,
         on_delete=models.CASCADE,
         related_name='connections_from'
     )
     pattern2 = models.ForeignKey(
-        DreamPattern,
+        ThingPattern,
         on_delete=models.CASCADE,
         related_name='connections_to'
     )

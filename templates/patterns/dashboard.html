@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Dream Patterns - NewDreamFlow{% endblock %}
+{% block title %}Thing Patterns - NewThingFlow{% endblock %}
 
 {% block extra_head %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -10,13 +10,13 @@
 
 {% block content %}
 <div class="px-4 py-5 sm:px-6">
-    <h1 class="text-2xl font-bold mb-6">Dream Pattern Analysis</h1>
+    <h1 class="text-2xl font-bold mb-6">Thing Pattern Analysis</h1>
     
     <!-- Pattern Overview -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         <div class="bg-white rounded-lg shadow p-6 text-center" style="background-color: var(--bg-secondary);">
-            <div class="text-3xl font-bold text-purple-600">{{ total_dreams|default:0 }}</div>
-            <div class="text-sm text-gray-600">Total Dreams</div>
+            <div class="text-3xl font-bold text-purple-600">{{ total_things|default:0 }}</div>
+            <div class="text-sm text-gray-600">Total Things</div>
         </div>
         <div class="bg-white rounded-lg shadow p-6 text-center" style="background-color: var(--bg-secondary);">
             <div class="text-3xl font-bold text-blue-600">{{ patterns_found|default:0 }}</div>
@@ -27,8 +27,8 @@
             <div class="text-sm text-gray-600">Recurring Themes</div>
         </div>
         <div class="bg-white rounded-lg shadow p-6 text-center" style="background-color: var(--bg-secondary);">
-            <div class="text-3xl font-bold text-indigo-600">{{ avg_lucidity|default:"0.0" }}</div>
-            <div class="text-sm text-gray-600">Avg. Lucidity</div>
+            <div class="text-3xl font-bold text-indigo-600">{{ unique_authors|default:0 }}</div>
+            <div class="text-sm text-gray-600">Unique Authors</div>
         </div>
     </div>
     
@@ -52,21 +52,21 @@
                     </div>
                     {% endfor %}
                 {% else %}
-                    <p class="text-gray-500">No patterns detected yet. Keep recording dreams!</p>
+                    <p class="text-gray-500">No patterns detected yet. Keep recording things!</p>
                 {% endif %}
             </div>
         </div>
         
-        <!-- Dream Timeline -->
+        <!-- Thing Timeline -->
         <div class="bg-white rounded-lg shadow p-6" style="background-color: var(--bg-secondary);">
-            <h2 class="text-xl font-semibold mb-4">Dream Frequency</h2>
-            <canvas id="dreamTimeline" width="400" height="200"></canvas>
+            <h2 class="text-xl font-semibold mb-4">Thing Frequency</h2>
+            <canvas id="thingTimeline" width="400" height="200"></canvas>
         </div>
         
-        <!-- Mood Distribution -->
+        <!-- Privacy Distribution -->
         <div class="bg-white rounded-lg shadow p-6" style="background-color: var(--bg-secondary);">
-            <h2 class="text-xl font-semibold mb-4">Mood Distribution</h2>
-            <canvas id="moodChart" width="400" height="200"></canvas>
+            <h2 class="text-xl font-semibold mb-4">Privacy Distribution</h2>
+            <canvas id="privacyChart" width="400" height="200"></canvas>
         </div>
         
         <!-- Common Symbols -->
@@ -105,7 +105,7 @@
             </div>
             <div class="flex items-center">
                 <div class="w-4 h-4 rounded-full bg-yellow-500 mr-2"></div>
-                <span>Dreams</span>
+                <span>Things</span>
             </div>
         </div>
     </div>
@@ -122,20 +122,20 @@
                 {% endfor %}
             </div>
         {% else %}
-            <p class="text-gray-600">AI insights will appear here once you've recorded more dreams. The AI needs at least 5 dreams to start identifying meaningful patterns.</p>
+            <p class="text-gray-600">AI insights will appear here once you've recorded more things. The AI needs at least 5 things to start identifying meaningful patterns.</p>
         {% endif %}
     </div>
 </div>
 
 <script>
-// Dream Timeline Chart
-const timelineCtx = document.getElementById('dreamTimeline').getContext('2d');
+// Thing Timeline Chart
+const timelineCtx = document.getElementById('thingTimeline').getContext('2d');
 new Chart(timelineCtx, {
     type: 'line',
     data: {
         labels: {{ timeline_labels|default:"[]"|safe }},
         datasets: [{
-            label: 'Dreams per Week',
+            label: 'Things per Week',
             data: {{ timeline_data|default:"[]"|safe }},
             borderColor: 'rgb(139, 92, 246)',
             backgroundColor: 'rgba(139, 92, 246, 0.1)',
@@ -157,14 +157,14 @@ new Chart(timelineCtx, {
     }
 });
 
-// Mood Distribution Chart
-const moodCtx = document.getElementById('moodChart').getContext('2d');
-new Chart(moodCtx, {
+// Privacy Distribution Chart
+const privacyCtx = document.getElementById('privacyChart').getContext('2d');
+new Chart(privacyCtx, {
     type: 'doughnut',
     data: {
-        labels: {{ mood_labels|default:"[]"|safe }},
+        labels: {{ privacy_labels|default:"['Private', 'Specific Users', 'Groups', 'Community']"|safe }},
         datasets: [{
-            data: {{ mood_data|default:"[]"|safe }},
+            data: {{ privacy_data|default:"[]"|safe }},
             backgroundColor: [
                 'rgba(239, 68, 68, 0.8)',
                 'rgba(245, 158, 11, 0.8)',
@@ -192,7 +192,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (data.nodes.length === 0) {
                 document.getElementById('pattern-network').innerHTML = 
                     '<div class="flex items-center justify-center h-full text-gray-500">' +
-                    '<p>No pattern connections to visualize yet. Keep recording dreams!</p>' +
+                    '<p>No pattern connections to visualize yet. Keep recording things!</p>' +
                     '</div>';
                 return;
             }
@@ -252,9 +252,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (params.nodes.length > 0) {
                     const nodeId = params.nodes[0];
                     const node = nodes.get(nodeId);
-                    if (node.type === 'dream' && nodeId.startsWith('dream_')) {
-                        const dreamId = nodeId.replace('dream_', '');
-                        window.location.href = `/dreams/${dreamId}/`;
+                    if (node.type === 'thing' && nodeId.startsWith('thing_')) {
+                        const thingId = nodeId.replace('thing_', '');
+                        window.location.href = `/things/${thingId}/`;
                     }
                 }
             });
@@ -274,7 +274,7 @@ function getNodeColor(node) {
         'symbol': '#3B82F6',     // Blue
         'emotion': '#10B981',    // Green
         'sequence': '#F59E0B',   // Amber
-        'dream': '#FDE047'       // Yellow
+        'thing': '#FDE047'       // Yellow
     };
     return colors[node.group] || '#9CA3AF';
 }

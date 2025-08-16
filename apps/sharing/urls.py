@@ -5,7 +5,7 @@ app_name = 'sharing'
 
 urlpatterns = [
     path('groups/', views.groups, name='groups'),
-    path('groups/<int:pk>/dreams/', views.group_dreams, name='group_dreams'),
+    path('groups/<int:pk>/things/', views.group_things, name='group_things'),
     path('groups/<int:pk>/invite/', views.invite_to_group, name='invite_to_group'),
-    path('dream/<uuid:pk>/share/', views.share_dream, name='share_dream'),
+    path('thing/<uuid:pk>/share/', views.share_thing, name='share_thing'),
 ]

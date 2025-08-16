@@ -20,7 +20,7 @@ class UserProfileForm(forms.ModelForm):
     class Meta:
         model = User
         fields = [
-            'first_name', 'last_name', 'email', 'dream_face',
+            'first_name', 'last_name', 'email', 'thing_face',
             'theme', 'background_music', 'music_volume', 'default_privacy'
         ]
         widgets = {
@@ -33,7 +33,7 @@ class UserProfileForm(forms.ModelForm):
             'email': forms.EmailInput(attrs={
                 'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-purple-500 focus:border-purple-500'
             }),
-            'dream_face': forms.FileInput(attrs={
+            'thing_face': forms.FileInput(attrs={
                 'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-purple-500 focus:border-purple-500',
                 'accept': 'image/*'
             }),

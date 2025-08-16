@@ -2,8 +2,8 @@ from django.db import models
 from django.conf import settings
 
 
-class DreamGroup(models.Model):
-    """Groups for sharing dreams."""
+class ThingGroup(models.Model):
+    """Groups for sharing things."""
     
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
@@ -16,7 +16,7 @@ class DreamGroup(models.Model):
     )
     members = models.ManyToManyField(
         settings.AUTH_USER_MODEL,
-        related_name='dream_groups',
+        related_name='thing_groups',
         through='GroupMembership',
         through_fields=('group', 'user')
     )
@@ -35,7 +35,7 @@ class DreamGroup(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
-        db_table = 'dream_groups'
+        db_table = 'thing_groups'
         ordering = ['name']
     
     def __str__(self):
@@ -43,7 +43,7 @@ class DreamGroup(models.Model):
 
 
 class GroupMembership(models.Model):
-    """Membership in dream sharing groups."""
+    """Membership in thing sharing groups."""
     
     ROLE_CHOICES = [
         ('member', 'Member'),
@@ -56,7 +56,7 @@ class GroupMembership(models.Model):
         on_delete=models.CASCADE
     )
     group = models.ForeignKey(
-        DreamGroup,
+        ThingGroup,
         on_delete=models.CASCADE
     )
     
@@ -84,7 +84,7 @@ class GroupMembership(models.Model):
 
 
 class ShareHistory(models.Model):
-    """Track sharing history for dreams."""
+    """Track sharing history for things."""
     
     ACTION_CHOICES = [
         ('shared', 'Shared'),
@@ -92,8 +92,8 @@ class ShareHistory(models.Model):
         ('modified', 'Modified Sharing'),
     ]
     
-    dream = models.ForeignKey(
-        'dreams.Dream',
+    thing = models.ForeignKey(
+        'things.Thing',
         on_delete=models.CASCADE,
         related_name='share_history'
     )
@@ -114,7 +114,7 @@ class ShareHistory(models.Model):
         related_name='share_notifications'
     )
     affected_groups = models.ManyToManyField(
-        DreamGroup,
+        ThingGroup,
         blank=True,
         related_name='share_notifications'
     )
@@ -130,4 +130,4 @@ class ShareHistory(models.Model):
         ordering = ['-performed_at']
     
     def __str__(self):
-        return f"{self.action} {self.dream} at {self.performed_at}"
+        return f"{self.action} {self.thing} at {self.performed_at}"

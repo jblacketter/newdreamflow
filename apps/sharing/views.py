@@ -4,16 +4,16 @@ from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.core.paginator import Paginator
 from django.db.models import Q
-from apps.dreams.models import Dream
-from .models import DreamGroup, GroupMembership, ShareHistory
-from .forms import ShareDreamForm
+from apps.things.models import Thing
+from .models import ThingGroup, GroupMembership, ShareHistory
+from .forms import ShareThingForm
 
 User = get_user_model()
 
 
 @login_required
 def groups(request):
-    """List dream sharing groups."""
+    """List thing sharing groups."""
     if request.method == 'POST':
         # Handle group creation
         name = request.POST.get('name')
@@ -23,7 +23,7 @@ def groups(request):
         
         if name:  # Ensure name is provided
             # Create the group
-            group = DreamGroup.objects.create(
+            group = ThingGroup.objects.create(
                 name=name,
                 description=description,
                 creator=request.user,
@@ -48,7 +48,7 @@ def groups(request):
     
     # Get public groups the user is not a member of
     user_group_ids = user_groups.values_list('group_id', flat=True)
-    public_groups = DreamGroup.objects.filter(
+    public_groups = ThingGroup.objects.filter(
         is_private=False
     ).exclude(id__in=user_group_ids)
     
@@ -61,55 +61,55 @@ def groups(request):
 
 
 @login_required
-def share_dream(request, pk):
-    """Share a dream with users or groups."""
-    dream = get_object_or_404(Dream, pk=pk, user=request.user)
+def share_thing(request, pk):
+    """Share a thing with users or groups."""
+    thing = get_object_or_404(Thing, pk=pk, user=request.user)
     
     if request.method == 'POST':
-        form = ShareDreamForm(request.user, request.POST)
+        form = ShareThingForm(request.user, request.POST)
         if form.is_valid():
-            old_privacy = dream.privacy_level
+            old_privacy = thing.privacy_level
             
             # Update privacy level
-            dream.privacy_level = form.cleaned_data['privacy_level']
+            thing.privacy_level = form.cleaned_data['privacy_level']
             
             # Update shared users and groups
-            dream.shared_with_users.set(form.cleaned_data['shared_with_users'])
-            dream.shared_with_groups.set(form.cleaned_data['shared_with_groups'])
-            dream.save()
+            thing.shared_with_users.set(form.cleaned_data['shared_with_users'])
+            thing.shared_with_groups.set(form.cleaned_data['shared_with_groups'])
+            thing.save()
             
             # Record sharing history
             history = ShareHistory.objects.create(
-                dream=dream,
+                thing=thing,
                 action='shared' if old_privacy == 'private' else 'modified',
                 old_privacy=old_privacy,
-                new_privacy=dream.privacy_level,
+                new_privacy=thing.privacy_level,
                 performed_by=request.user
             )
             history.affected_users.set(form.cleaned_data['shared_with_users'])
             history.affected_groups.set(form.cleaned_data['shared_with_groups'])
             
-            messages.success(request, 'Dream sharing settings updated!')
-            return redirect('dreams:detail', pk=dream.pk)
+            messages.success(request, 'Thing sharing settings updated!')
+            return redirect('things:detail', pk=thing.pk)
     else:
         initial = {
-            'privacy_level': dream.privacy_level,
-            'shared_with_users': dream.shared_with_users.all(),
-            'shared_with_groups': dream.shared_with_groups.all()
+            'privacy_level': thing.privacy_level,
+            'shared_with_users': thing.shared_with_users.all(),
+            'shared_with_groups': thing.shared_with_groups.all()
         }
-        form = ShareDreamForm(request.user, initial=initial)
+        form = ShareThingForm(request.user, initial=initial)
     
     context = {
-        'dream': dream,
+        'thing': thing,
         'form': form
     }
-    return render(request, 'sharing/share_dream.html', context)
+    return render(request, 'sharing/share_thing.html', context)
 
 
 @login_required
 def invite_to_group(request, pk):
     """Invite users to a group."""
-    group = get_object_or_404(DreamGroup, pk=pk)
+    group = get_object_or_404(ThingGroup, pk=pk)
     
     # Check if user has permission to invite (admin or moderator)
     membership = get_object_or_404(GroupMembership, user=request.user, group=group)
@@ -155,32 +155,32 @@ def invite_to_group(request, pk):
 
 
 @login_required
-def group_dreams(request, pk):
-    """View dreams shared with a specific group."""
-    group = get_object_or_404(DreamGroup, pk=pk)
+def group_things(request, pk):
+    """View things shared with a specific group."""
+    group = get_object_or_404(ThingGroup, pk=pk)
     
     # Check if user is a member
     if not GroupMembership.objects.filter(user=request.user, group=group).exists():
-        messages.error(request, 'You must be a member of this group to view its dreams.')
+        messages.error(request, 'You must be a member of this group to view its things.')
         return redirect('sharing:groups')
     
-    # Get dreams shared with this group
-    dreams = Dream.objects.filter(
+    # Get things shared with this group
+    things = Thing.objects.filter(
         privacy_level='groups',
         shared_with_groups=group
-    ).select_related('user').order_by('-dream_date')
+    ).select_related('user').order_by('-thing_date')
     
     # Search functionality
     search_query = request.GET.get('search', '')
     if search_query:
-        dreams = dreams.filter(
+        things = things.filter(
             Q(title__icontains=search_query) |
             Q(description__icontains=search_query) |
             Q(user__username__icontains=search_query)
         )
     
     # Pagination
-    paginator = Paginator(dreams, 12)
+    paginator = Paginator(things, 12)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
@@ -195,4 +195,4 @@ def group_dreams(request, pk):
             role='admin'
         ).exists()
     }
-    return render(request, 'sharing/group_dreams.html', context)
+    return render(request, 'sharing/group_things.html', context)

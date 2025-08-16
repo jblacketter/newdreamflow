@@ -1,16 +1,16 @@
 from django import forms
 from django.contrib.auth import get_user_model
-from apps.dreams.models import Dream
-from .models import DreamGroup
+from apps.things.models import Thing
+from .models import ThingGroup
 
 User = get_user_model()
 
 
-class ShareDreamForm(forms.Form):
-    """Form for sharing a dream with users or groups."""
+class ShareThingForm(forms.Form):
+    """Form for sharing a thing with users or groups."""
     
     privacy_level = forms.ChoiceField(
-        choices=Dream.PRIVACY_CHOICES,
+        choices=Thing.PRIVACY_CHOICES,
         widget=forms.RadioSelect(attrs={
             'class': 'text-purple-600 focus:ring-purple-500'
         })
@@ -25,7 +25,7 @@ class ShareDreamForm(forms.Form):
     )
     
     shared_with_groups = forms.ModelMultipleChoiceField(
-        queryset=DreamGroup.objects.none(),
+        queryset=ThingGroup.objects.none(),
         required=False,
         widget=forms.CheckboxSelectMultiple(attrs={
             'class': 'rounded border-gray-300 text-purple-600 focus:ring-purple-500'
@@ -40,6 +40,6 @@ class ShareDreamForm(forms.Form):
             id=user.id
         ).filter(is_active=True)
         
-        self.fields['shared_with_groups'].queryset = DreamGroup.objects.filter(
+        self.fields['shared_with_groups'].queryset = ThingGroup.objects.filter(
             members=user
         )

@@ -18,14 +18,14 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from apps.dreams import views as dream_views
+from apps.things import views as thing_views
 from apps.users import views as user_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', dream_views.quick_capture, name='home'),  # Quick capture as default home
+    path('', thing_views.quick_capture, name='home'),  # Quick capture as default home
     path('register/', user_views.register, name='register'),
-    path('things/', include('apps.dreams.urls', namespace='dreams')),
+    path('things/', include('apps.things.urls', namespace='things')),
     path('patterns/', include('apps.patterns.urls', namespace='patterns')),
     path('sharing/', include('apps.sharing.urls', namespace='sharing')),
     path('users/', include('apps.users.urls', namespace='users')),
