@@ -1,7 +1,20 @@
 from django.conf import settings
-from algoliasearch.search.client import SearchClientSync
-from algoliasearch_django import get_adapter
 import logging
+
+# Check if Algolia is configured before importing
+ALGOLIA_AVAILABLE = False
+try:
+    # Only attempt import if the app is in INSTALLED_APPS
+    if 'algoliasearch_django' in settings.INSTALLED_APPS:
+        from algoliasearch.search.client import SearchClientSync
+        from algoliasearch_django import get_adapter
+        ALGOLIA_AVAILABLE = True
+    else:
+        SearchClientSync = None
+        get_adapter = None
+except ImportError:
+    SearchClientSync = None
+    get_adapter = None
 
 logger = logging.getLogger(__name__)
 
@@ -10,6 +23,11 @@ class AlgoliaSearchService:
     """Service for handling Algolia search operations."""
     
     def __init__(self):
+        if not ALGOLIA_AVAILABLE:
+            logger.info("Algolia package not available. Search functionality disabled.")
+            self.enabled = False
+            return
+            
         self.app_id = settings.ALGOLIA.get('APPLICATION_ID')
         self.api_key = settings.ALGOLIA.get('API_KEY')
         self.search_key = settings.ALGOLIA.get('SEARCH_API_KEY')
@@ -55,25 +73,27 @@ class AlgoliaSearchService:
     
     def update_thing_index(self, thing):
         """Update a single thing in the index."""
-        if not self.enabled or not thing.is_public_thing():
+        if not self.enabled or not ALGOLIA_AVAILABLE or not thing.is_public_thing():
             return
         
         try:
-            from apps.things.index import ThingIndex
-            adapter = get_adapter(thing.__class__)
-            adapter.save_record(thing)
+            # Only import if Algolia is truly available
+            if get_adapter:
+                adapter = get_adapter(thing.__class__)
+                adapter.save_record(thing)
         except Exception as e:
             logger.error(f"Error updating thing {thing.id} in Algolia: {e}")
     
     def remove_thing_from_index(self, thing):
         """Remove a thing from the index."""
-        if not self.enabled:
+        if not self.enabled or not ALGOLIA_AVAILABLE:
             return
         
         try:
-            from apps.things.index import ThingIndex
-            adapter = get_adapter(thing.__class__)
-            adapter.delete_record(thing)
+            # Only import if Algolia is truly available
+            if get_adapter:
+                adapter = get_adapter(thing.__class__)
+                adapter.delete_record(thing)
         except Exception as e:
             logger.error(f"Error removing thing {thing.id} from Algolia: {e}")
     

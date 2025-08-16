@@ -50,3 +50,7 @@ venv.bak/
 *.key
 *.pem
 secrets/
+
+# Claude Code
+.claude/
+nul
