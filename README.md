@@ -195,6 +195,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - UI components from [Tailwind CSS](https://tailwindcss.com/)
 - Interactive features with [Alpine.js](https://alpinejs.dev/) and [HTMX](https://htmx.org/)
 
+## 🤖 AI Assistant Model
+
+The repository’s automated coding assistant (Junie) used for maintenance and issue resolution is powered by the gpt-5-2025-08-07 model. Documented on: 2025-08-16 19:30 (local time).
+
 ## 📞 Support
 
 For issues and feature requests, please use the [GitHub Issues](https://github.com/jblacketter/newdreamflow/issues) page.
