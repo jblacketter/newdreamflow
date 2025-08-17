@@ -1,0 +1,450 @@
+{% extends 'base.html' %}
+
+{% block title %}Playing: {{ story.title }}{% endblock %}
+
+{% block extra_head %}
+<style>
+    body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background: #000;
+    }
+    
+    .player-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        flex-direction: column;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    .player-header {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        padding: 1rem 2rem;
+        background: rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(10px);
+        z-index: 100;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .story-title {
+        color: white;
+        font-size: 1.5rem;
+        font-weight: 600;
+    }
+    
+    .exit-btn {
+        padding: 0.5rem 1rem;
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 0.5rem;
+        text-decoration: none;
+        font-weight: 500;
+        transition: background 0.2s;
+    }
+    
+    .exit-btn:hover {
+        background: rgba(255, 255, 255, 0.3);
+    }
+    
+    .player-content {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 4rem 2rem;
+    }
+    
+    .thing-display {
+        max-width: 900px;
+        width: 100%;
+        background: white;
+        border-radius: 1rem;
+        padding: 3rem;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        min-height: 400px;
+        position: relative;
+        opacity: 0;
+        transform: scale(0.95);
+        transition: all 0.5s ease;
+    }
+    
+    .thing-display.active {
+        opacity: 1;
+        transform: scale(1);
+    }
+    
+    .thing-display.fade-out {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    
+    .thing-title {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 2rem;
+        color: #111827;
+    }
+    
+    .thing-content {
+        font-size: 1.25rem;
+        line-height: 1.8;
+        color: #374151;
+        white-space: pre-wrap;
+    }
+    
+    .thing-images {
+        margin-top: 2rem;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+    
+    .thing-image {
+        width: 100%;
+        border-radius: 0.5rem;
+        object-fit: cover;
+    }
+    
+    .player-controls {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        padding: 2rem;
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(10px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 2rem;
+    }
+    
+    .control-btn {
+        padding: 0.75rem;
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 50px;
+        height: 50px;
+    }
+    
+    .control-btn:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: scale(1.1);
+    }
+    
+    .control-btn.play-pause {
+        width: 60px;
+        height: 60px;
+    }
+    
+    .progress-bar {
+        flex: 1;
+        max-width: 400px;
+        height: 6px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 3px;
+        overflow: hidden;
+        position: relative;
+    }
+    
+    .progress-fill {
+        height: 100%;
+        background: white;
+        border-radius: 3px;
+        transition: width 0.3s;
+        width: 0%;
+    }
+    
+    .thing-counter {
+        color: white;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+    
+    .loading-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.5rem;
+        z-index: 1000;
+    }
+    
+    @media (max-width: 768px) {
+        .thing-display {
+            padding: 2rem;
+            margin: 1rem;
+        }
+        
+        .thing-title {
+            font-size: 1.5rem;
+        }
+        
+        .thing-content {
+            font-size: 1rem;
+        }
+        
+        .player-controls {
+            padding: 1rem;
+            gap: 1rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="loading-screen" id="loading">
+    <div>Loading story...</div>
+</div>
+
+<div class="player-container" style="display: none;" id="player">
+    <div class="player-header">
+        <h1 class="story-title">{{ story.title }}</h1>
+        <a href="{% url 'things:story_detail' pk=story.pk %}" class="exit-btn">Exit</a>
+    </div>
+    
+    <div class="player-content">
+        <div class="thing-display" id="thing-display">
+            <h2 class="thing-title" id="thing-title"></h2>
+            <div class="thing-content" id="thing-content"></div>
+            <div class="thing-images" id="thing-images"></div>
+        </div>
+    </div>
+    
+    <div class="player-controls">
+        <button class="control-btn" id="prev-btn" title="Previous">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
+        </button>
+        
+        <button class="control-btn play-pause" id="play-pause-btn" title="Play/Pause">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" id="play-icon">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" id="pause-icon" style="display: none;">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+        </button>
+        
+        <button class="control-btn" id="next-btn" title="Next">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+        </button>
+        
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress-fill"></div>
+        </div>
+        
+        <div class="thing-counter">
+            <span id="current-thing">1</span> / <span id="total-things">1</span>
+        </div>
+    </div>
+</div>
+
+<script>
+// Story data from backend
+const thingsData = {{ things_data|safe }};
+let currentIndex = 0;
+let isPlaying = false;
+let currentTimeout = null;
+let progressInterval = null;
+
+// Elements
+const player = document.getElementById('player');
+const loading = document.getElementById('loading');
+const thingDisplay = document.getElementById('thing-display');
+const thingTitle = document.getElementById('thing-title');
+const thingContent = document.getElementById('thing-content');
+const thingImages = document.getElementById('thing-images');
+const playPauseBtn = document.getElementById('play-pause-btn');
+const playIcon = document.getElementById('play-icon');
+const pauseIcon = document.getElementById('pause-icon');
+const prevBtn = document.getElementById('prev-btn');
+const nextBtn = document.getElementById('next-btn');
+const progressFill = document.getElementById('progress-fill');
+const currentThingSpan = document.getElementById('current-thing');
+const totalThingsSpan = document.getElementById('total-things');
+
+// Initialize
+function init() {
+    if (thingsData.length === 0) {
+        thingTitle.textContent = 'No things in this story';
+        thingContent.textContent = 'Add some things to your story to play them.';
+        loading.style.display = 'none';
+        player.style.display = 'flex';
+        return;
+    }
+    
+    totalThingsSpan.textContent = thingsData.length;
+    setTimeout(() => {
+        loading.style.display = 'none';
+        player.style.display = 'flex';
+        showThing(0);
+        setTimeout(() => {
+            thingDisplay.classList.add('active');
+        }, 100);
+    }, 1000);
+}
+
+// Show a specific thing
+function showThing(index) {
+    if (index < 0 || index >= thingsData.length) return;
+    
+    currentIndex = index;
+    const thing = thingsData[index];
+    
+    // Fade out
+    thingDisplay.classList.remove('active');
+    thingDisplay.classList.add('fade-out');
+    
+    setTimeout(() => {
+        // Update content
+        thingTitle.textContent = thing.title;
+        thingContent.textContent = thing.content || '';
+        
+        // Update images
+        thingImages.innerHTML = '';
+        if (thing.images && thing.images.length > 0) {
+            thing.images.forEach(imageUrl => {
+                const img = document.createElement('img');
+                img.src = imageUrl;
+                img.className = 'thing-image';
+                thingImages.appendChild(img);
+            });
+        }
+        
+        // Update counter
+        currentThingSpan.textContent = index + 1;
+        
+        // Fade in
+        thingDisplay.classList.remove('fade-out');
+        thingDisplay.classList.add('active');
+        
+        // Auto-advance if playing
+        if (isPlaying) {
+            startProgress(thing.duration || 5000);
+        }
+    }, 300);
+}
+
+// Start progress bar and auto-advance
+function startProgress(duration) {
+    clearTimeout(currentTimeout);
+    clearInterval(progressInterval);
+    
+    progressFill.style.width = '0%';
+    let elapsed = 0;
+    const interval = 100;
+    
+    progressInterval = setInterval(() => {
+        elapsed += interval;
+        const progress = (elapsed / duration) * 100;
+        progressFill.style.width = progress + '%';
+        
+        if (elapsed >= duration) {
+            clearInterval(progressInterval);
+        }
+    }, interval);
+    
+    currentTimeout = setTimeout(() => {
+        if (currentIndex < thingsData.length - 1) {
+            showThing(currentIndex + 1);
+        } else {
+            // Story finished
+            pause();
+            showThing(0); // Reset to beginning
+        }
+    }, duration);
+}
+
+// Play/Pause functionality
+function play() {
+    isPlaying = true;
+    playIcon.style.display = 'none';
+    pauseIcon.style.display = 'block';
+    const thing = thingsData[currentIndex];
+    startProgress(thing.duration || 5000);
+}
+
+function pause() {
+    isPlaying = false;
+    playIcon.style.display = 'block';
+    pauseIcon.style.display = 'none';
+    clearTimeout(currentTimeout);
+    clearInterval(progressInterval);
+    progressFill.style.width = '0%';
+}
+
+// Event listeners
+playPauseBtn.addEventListener('click', () => {
+    if (isPlaying) {
+        pause();
+    } else {
+        play();
+    }
+});
+
+prevBtn.addEventListener('click', () => {
+    pause();
+    if (currentIndex > 0) {
+        showThing(currentIndex - 1);
+    }
+});
+
+nextBtn.addEventListener('click', () => {
+    pause();
+    if (currentIndex < thingsData.length - 1) {
+        showThing(currentIndex + 1);
+    }
+});
+
+// Keyboard controls
+document.addEventListener('keydown', (e) => {
+    switch(e.key) {
+        case ' ':
+            e.preventDefault();
+            playPauseBtn.click();
+            break;
+        case 'ArrowLeft':
+            prevBtn.click();
+            break;
+        case 'ArrowRight':
+            nextBtn.click();
+            break;
+        case 'Escape':
+            window.location.href = '{% url "things:story_detail" pk=story.pk %}';
+            break;
+    }
+});
+
+// Initialize on load
+init();
+</script>
+{% endblock %}

@@ -195,3 +195,102 @@ class ThingTag(models.Model):
     
     def __str__(self):
         return self.name
+
+
+class Story(models.Model):
+    """A collection of Things arranged in a playable sequence."""
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='stories'
+    )
+    
+    # Story details
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True, help_text="Story description or synopsis")
+    
+    # Related things
+    things = models.ManyToManyField(
+        Thing,
+        through='StoryThing',
+        related_name='stories',
+        blank=True
+    )
+    
+    # Privacy settings (inherited from contained things)
+    privacy_level = models.CharField(
+        max_length=20,
+        choices=Thing.PRIVACY_CHOICES,
+        default='private'
+    )
+    
+    # Metadata
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    played_count = models.IntegerField(default=0)
+    last_played = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        db_table = 'stories'
+        ordering = ['-created_at']
+        verbose_name_plural = 'Stories'
+    
+    def __str__(self):
+        return self.title
+    
+    def get_absolute_url(self):
+        return reverse('things:story_detail', kwargs={'pk': self.pk})
+    
+    @property
+    def thing_count(self):
+        return self.things.count()
+    
+    @property
+    def total_duration(self):
+        """Calculate total playback duration (placeholder for future implementation)."""
+        return self.things.count() * 5  # Default 5 seconds per thing
+
+
+class StoryThing(models.Model):
+    """Ordered relationship between Story and Thing."""
+    
+    story = models.ForeignKey(
+        Story,
+        on_delete=models.CASCADE,
+        related_name='story_things'
+    )
+    thing = models.ForeignKey(
+        Thing,
+        on_delete=models.CASCADE,
+        related_name='thing_stories'
+    )
+    
+    # Order and timing
+    order = models.IntegerField(default=0, help_text="Position in the story sequence")
+    duration = models.IntegerField(
+        default=5,
+        help_text="Display duration in seconds"
+    )
+    transition_type = models.CharField(
+        max_length=20,
+        default='fade',
+        choices=[
+            ('fade', 'Fade'),
+            ('slide', 'Slide'),
+            ('none', 'None'),
+        ]
+    )
+    
+    # Metadata
+    added_at = models.DateTimeField(auto_now_add=True)
+    notes = models.TextField(blank=True, help_text="Notes about this thing in the story")
+    
+    class Meta:
+        db_table = 'story_things'
+        ordering = ['order', 'added_at']
+        unique_together = [['story', 'order']]
+    
+    def __str__(self):
+        return f"{self.story.title} - {self.order}: {self.thing.title or 'Untitled'}"

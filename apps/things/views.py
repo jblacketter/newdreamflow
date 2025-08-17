@@ -4,10 +4,10 @@ from django.contrib import messages
 from django.views.decorators.http import require_http_methods
 from django.http import JsonResponse
 from django.core.paginator import Paginator
-from django.db.models import Q
+from django.db.models import Q, Max
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
-from .models import Thing, ThingTag, ThingImage
+from .models import Thing, ThingTag, ThingImage, Story, StoryThing
 from .forms import ThingForm, ThingImageFormSet
 from .services.ai_service import ai_service
 from .services.semantic_service import semantic_service
@@ -431,3 +431,215 @@ def community_search_api(request):
     )
     
     return JsonResponse(results)
+
+
+@login_required
+def story_list(request):
+    """List all stories for the current user."""
+    stories = Story.objects.filter(user=request.user).prefetch_related('things')
+    
+    # Search functionality
+    search_query = request.GET.get('search', '')
+    if search_query:
+        stories = stories.filter(
+            Q(title__icontains=search_query) |
+            Q(description__icontains=search_query)
+        )
+    
+    # Pagination
+    paginator = Paginator(stories, 12)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'page_obj': page_obj,
+        'search_query': search_query,
+    }
+    return render(request, 'things/story_list.html', context)
+
+
+@login_required
+def story_create(request):
+    """Create a new story."""
+    if request.method == 'POST':
+        title = request.POST.get('title', '')
+        description = request.POST.get('description', '')
+        privacy_level = request.POST.get('privacy_level', 'private')
+        
+        if title:
+            story = Story.objects.create(
+                user=request.user,
+                title=title,
+                description=description,
+                privacy_level=privacy_level
+            )
+            
+            # Add selected things if any
+            thing_ids = request.POST.getlist('things')
+            for idx, thing_id in enumerate(thing_ids):
+                try:
+                    thing = Thing.objects.get(pk=thing_id, user=request.user)
+                    StoryThing.objects.create(
+                        story=story,
+                        thing=thing,
+                        order=idx
+                    )
+                except Thing.DoesNotExist:
+                    continue
+            
+            messages.success(request, f'Story "{story.title}" created successfully!')
+            return redirect('things:story_edit', pk=story.pk)
+    
+    # Get user's things for selection
+    user_things = Thing.objects.filter(user=request.user).order_by('-created_at')
+    
+    context = {
+        'user_things': user_things,
+    }
+    return render(request, 'things/story_create.html', context)
+
+
+@login_required
+def story_detail(request, pk):
+    """Display a single story."""
+    story = get_object_or_404(Story, pk=pk)
+    
+    # Check permissions
+    if story.user != request.user and story.privacy_level == 'private':
+        messages.error(request, "You don't have permission to view this story.")
+        return redirect('things:story_list')
+    
+    # Get ordered things
+    story_things = story.story_things.select_related('thing').order_by('order')
+    
+    context = {
+        'story': story,
+        'story_things': story_things,
+        'can_edit': story.user == request.user,
+    }
+    return render(request, 'things/story_detail.html', context)
+
+
+@login_required
+def story_edit(request, pk):
+    """Edit a story and manage its things."""
+    story = get_object_or_404(Story, pk=pk, user=request.user)
+    
+    if request.method == 'POST':
+        # Update story details
+        story.title = request.POST.get('title', story.title)
+        story.description = request.POST.get('description', story.description)
+        story.privacy_level = request.POST.get('privacy_level', story.privacy_level)
+        story.save()
+        
+        # Handle thing ordering
+        if 'reorder' in request.POST:
+            thing_orders = request.POST.getlist('thing_order')
+            for idx, story_thing_id in enumerate(thing_orders):
+                try:
+                    story_thing = StoryThing.objects.get(pk=story_thing_id, story=story)
+                    story_thing.order = idx
+                    story_thing.save()
+                except StoryThing.DoesNotExist:
+                    continue
+        
+        # Add new things
+        if 'add_things' in request.POST:
+            thing_ids = request.POST.getlist('new_things')
+            max_order = story.story_things.aggregate(Max('order'))['order__max'] or -1
+            
+            for thing_id in thing_ids:
+                try:
+                    thing = Thing.objects.get(pk=thing_id, user=request.user)
+                    max_order += 1
+                    StoryThing.objects.create(
+                        story=story,
+                        thing=thing,
+                        order=max_order
+                    )
+                except Thing.DoesNotExist:
+                    continue
+        
+        # Remove things
+        if 'remove_thing' in request.POST:
+            story_thing_id = request.POST.get('remove_thing')
+            try:
+                story_thing = StoryThing.objects.get(pk=story_thing_id, story=story)
+                story_thing.delete()
+                
+                # Reorder remaining things
+                for idx, st in enumerate(story.story_things.order_by('order')):
+                    st.order = idx
+                    st.save()
+            except StoryThing.DoesNotExist:
+                pass
+        
+        messages.success(request, 'Story updated successfully!')
+        
+        if 'save_and_play' in request.POST:
+            return redirect('things:story_play', pk=story.pk)
+        else:
+            return redirect('things:story_edit', pk=story.pk)
+    
+    # Get ordered story things
+    story_things = story.story_things.select_related('thing').order_by('order')
+    
+    # Get available things to add (not already in story)
+    existing_thing_ids = story.things.values_list('id', flat=True)
+    available_things = Thing.objects.filter(user=request.user).exclude(id__in=existing_thing_ids).order_by('-created_at')
+    
+    context = {
+        'story': story,
+        'story_things': story_things,
+        'available_things': available_things,
+    }
+    return render(request, 'things/story_edit.html', context)
+
+
+@login_required
+def story_play(request, pk):
+    """Play a story - display things in sequence."""
+    story = get_object_or_404(Story, pk=pk)
+    
+    # Check permissions
+    if story.user != request.user and story.privacy_level == 'private':
+        messages.error(request, "You don't have permission to play this story.")
+        return redirect('things:story_list')
+    
+    # Update play count and last played
+    story.played_count += 1
+    story.last_played = timezone.now()
+    story.save()
+    
+    # Get ordered things with their timing info
+    story_things = story.story_things.select_related('thing').order_by('order')
+    
+    # Prepare data for the player
+    things_data = []
+    for st in story_things:
+        thing_data = {
+            'id': str(st.thing.id),
+            'title': st.thing.title or 'Untitled',
+            'content': st.thing.description,
+            'duration': st.duration * 1000,  # Convert to milliseconds
+            'transition': st.transition_type,
+            'images': [img.get_image_url for img in st.thing.images.all()]
+        }
+        things_data.append(thing_data)
+    
+    context = {
+        'story': story,
+        'things_data': json.dumps(things_data),
+        'total_duration': sum(st.duration for st in story_things),
+    }
+    return render(request, 'things/story_play.html', context)
+
+
+@login_required
+@require_http_methods(["DELETE"])
+def story_delete(request, pk):
+    """Delete a story."""
+    story = get_object_or_404(Story, pk=pk, user=request.user)
+    story.delete()
+    messages.success(request, 'Story deleted successfully!')
+    return JsonResponse({'success': True})
