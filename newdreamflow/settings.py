@@ -44,13 +44,17 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     # Third party apps
     'django_htmx',
-    'algoliasearch_django',
     # Local apps
     'apps.users',
     'apps.things',
     'apps.patterns',
     'apps.sharing',
 ]
+
+# Conditionally add Algolia if configured
+ALGOLIA_APP_ID = os.getenv('ALGOLIA_APPLICATION_ID', '')
+if ALGOLIA_APP_ID and ALGOLIA_APP_ID != 'your-algolia-app-id':
+    INSTALLED_APPS.append('algoliasearch_django')
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
