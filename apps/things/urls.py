@@ -13,6 +13,7 @@ urlpatterns = [
     path('<uuid:pk>/edit/', views.quick_capture, name='edit'),
     path('<uuid:pk>/delete/', views.thing_delete, name='delete'),
     path('<uuid:pk>/toggle-privacy/', views.toggle_privacy, name='toggle_privacy'),
+    path('<uuid:pk>/convert-to-story/', views.convert_thing_to_story, name='convert_to_story'),
     path('record/', views.record_voice, name='record_voice'),
     
     # Story URLs

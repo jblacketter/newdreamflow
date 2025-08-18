@@ -11,6 +11,7 @@ from .models import Thing, ThingTag, ThingImage, Story, StoryThing
 from .forms import ThingForm, ThingImageFormSet
 from .services.ai_service import ai_service
 from .services.semantic_service import semantic_service
+from .services.story_service import story_service
 import json
 
 
@@ -56,8 +57,8 @@ def quick_capture(request, pk=None):
                     # Update semantic analysis in background
                     if content:
                         semantic_analysis = semantic_service.extract_semantic_bits(content)
-                        thing.semantic_verbs = semantic_analysis.get('verbs', [])
-                        thing.semantic_nouns = semantic_analysis.get('nouns', [])
+                        thing.semantic_verbs = semantic_analysis.get('verb_phrases', [])
+                        thing.semantic_nouns = semantic_analysis.get('noun_phrases', [])
                         thing.semantic_bits = semantic_analysis
                     
                     thing.save()
@@ -83,8 +84,8 @@ def quick_capture(request, pk=None):
                 
                 # Add semantic analysis
                 semantic_analysis = semantic_service.extract_semantic_bits(content)
-                thing.semantic_verbs = semantic_analysis.get('verbs', [])
-                thing.semantic_nouns = semantic_analysis.get('nouns', [])
+                thing.semantic_verbs = semantic_analysis.get('verb_phrases', [])
+                thing.semantic_nouns = semantic_analysis.get('noun_phrases', [])
                 thing.semantic_bits = semantic_analysis
                 thing.save()
                 
@@ -131,8 +132,8 @@ def quick_capture(request, pk=None):
             
             # Semantic analysis
             semantic_analysis = semantic_service.extract_semantic_bits(content)
-            thing.semantic_verbs = semantic_analysis.get('verbs', [])
-            thing.semantic_nouns = semantic_analysis.get('nouns', [])
+            thing.semantic_verbs = semantic_analysis.get('verb_phrases', [])
+            thing.semantic_nouns = semantic_analysis.get('noun_phrases', [])
             thing.semantic_bits = semantic_analysis
         
         thing.save()
@@ -213,10 +214,14 @@ def thing_detail(request, pk):
     if thing.description:
         semantic_html = semantic_service.create_highlighted_html(thing.description)
     
+    # Check if thing can be converted to story
+    can_convert_to_story = story_service.is_thing_long_enough(thing)
+    
     context = {
         'thing': thing,
         'can_edit': thing.user == request.user,
         'semantic_html': semantic_html,
+        'can_convert_to_story': can_convert_to_story,
     }
     return render(request, 'things/thing_detail.html', context)
 
@@ -255,8 +260,8 @@ def thing_create(request):
                 
                 # Semantic bit analysis
                 semantic_analysis = semantic_service.extract_semantic_bits(thing_text)
-                thing.semantic_verbs = semantic_analysis.get('verbs', [])
-                thing.semantic_nouns = semantic_analysis.get('nouns', [])
+                thing.semantic_verbs = semantic_analysis.get('verb_phrases', [])
+                thing.semantic_nouns = semantic_analysis.get('noun_phrases', [])
                 thing.semantic_bits = semantic_analysis
                 
                 thing.save()
@@ -643,3 +648,26 @@ def story_delete(request, pk):
     story.delete()
     messages.success(request, 'Story deleted successfully!')
     return JsonResponse({'success': True})
+
+
+@login_required
+@require_http_methods(["POST"])
+def convert_thing_to_story(request, pk):
+    """Convert a long Thing into a Story with multiple chunks."""
+    thing = get_object_or_404(Thing, pk=pk, user=request.user)
+    
+    # Check if thing is long enough
+    if not story_service.is_thing_long_enough(thing):
+        messages.warning(request, 'This thing is too short to convert to a story.')
+        return redirect('things:detail', pk=thing.pk)
+    
+    # Create story from thing
+    story_title = request.POST.get('story_title', None)
+    story, created_things = story_service.create_story_from_thing(thing, story_title)
+    
+    if story:
+        messages.success(request, f'Successfully created story "{story.title}" with {len(created_things)} parts!')
+        return redirect('things:story_detail', pk=story.pk)
+    else:
+        messages.error(request, 'Could not create story from this thing.')
+        return redirect('things:detail', pk=thing.pk)

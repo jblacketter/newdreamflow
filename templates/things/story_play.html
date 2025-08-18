@@ -105,15 +105,89 @@
     
     .thing-images {
         margin-top: 2rem;
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1rem;
+        position: relative;
+        height: 400px;
+        overflow: hidden;
+        border-radius: 0.5rem;
+    }
+    
+    .thing-image-container {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: none;
+    }
+    
+    .thing-image-container.active {
+        display: block;
     }
     
     .thing-image {
         width: 100%;
-        border-radius: 0.5rem;
+        height: 100%;
         object-fit: cover;
+        transition: transform 8s ease-in-out;
+        will-change: transform;
+    }
+    
+    /* Pan and zoom effects */
+    .thing-image.pan-zoom-1 {
+        animation: panZoom1 8s ease-in-out;
+    }
+    
+    .thing-image.pan-zoom-2 {
+        animation: panZoom2 8s ease-in-out;
+    }
+    
+    .thing-image.pan-zoom-3 {
+        animation: panZoom3 8s ease-in-out;
+    }
+    
+    @keyframes panZoom1 {
+        0% {
+            transform: scale(1) translate(0, 0);
+        }
+        50% {
+            transform: scale(1.2) translate(-5%, -5%);
+        }
+        100% {
+            transform: scale(1.1) translate(5%, 5%);
+        }
+    }
+    
+    @keyframes panZoom2 {
+        0% {
+            transform: scale(1.1) translate(5%, 0);
+        }
+        50% {
+            transform: scale(1.3) translate(0, -10%);
+        }
+        100% {
+            transform: scale(1.2) translate(-5%, 0);
+        }
+    }
+    
+    @keyframes panZoom3 {
+        0% {
+            transform: scale(1.2) translate(-5%, -5%);
+        }
+        50% {
+            transform: scale(1.1) translate(5%, 0);
+        }
+        100% {
+            transform: scale(1) translate(0, 5%);
+        }
+    }
+    
+    .no-images-message {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        color: #9CA3AF;
+        font-style: italic;
     }
     
     .player-controls {
@@ -275,6 +349,8 @@ let currentIndex = 0;
 let isPlaying = false;
 let currentTimeout = null;
 let progressInterval = null;
+let imageInterval = null;
+let currentImageIndex = 0;
 
 // Elements
 const player = document.getElementById('player');
@@ -320,6 +396,10 @@ function showThing(index) {
     currentIndex = index;
     const thing = thingsData[index];
     
+    // Clear image cycling
+    clearInterval(imageInterval);
+    currentImageIndex = 0;
+    
     // Fade out
     thingDisplay.classList.remove('active');
     thingDisplay.classList.add('fade-out');
@@ -329,15 +409,34 @@ function showThing(index) {
         thingTitle.textContent = thing.title;
         thingContent.textContent = thing.content || '';
         
-        // Update images
+        // Update images with pan/zoom
         thingImages.innerHTML = '';
         if (thing.images && thing.images.length > 0) {
-            thing.images.forEach(imageUrl => {
+            // Create containers for each image
+            thing.images.forEach((imageUrl, idx) => {
+                const container = document.createElement('div');
+                container.className = 'thing-image-container';
+                if (idx === 0) container.classList.add('active');
+                
                 const img = document.createElement('img');
                 img.src = imageUrl;
                 img.className = 'thing-image';
-                thingImages.appendChild(img);
+                
+                // Add random pan-zoom effect
+                const effectNum = (idx % 3) + 1;
+                img.classList.add(`pan-zoom-${effectNum}`);
+                
+                container.appendChild(img);
+                thingImages.appendChild(container);
             });
+            
+            // Start image cycling if multiple images
+            if (thing.images.length > 1) {
+                startImageCycling(thing.images.length, thing.duration || 5000);
+            }
+        } else {
+            // Show no images message
+            thingImages.innerHTML = '<div class="no-images-message">No images</div>';
         }
         
         // Update counter
@@ -352,6 +451,30 @@ function showThing(index) {
             startProgress(thing.duration || 5000);
         }
     }, 300);
+}
+
+// Cycle through images with pan/zoom
+function startImageCycling(imageCount, totalDuration) {
+    if (imageCount <= 1) return;
+    
+    const imageDuration = totalDuration / imageCount;
+    
+    imageInterval = setInterval(() => {
+        // Hide current image
+        const containers = thingImages.querySelectorAll('.thing-image-container');
+        containers[currentImageIndex].classList.remove('active');
+        
+        // Show next image
+        currentImageIndex = (currentImageIndex + 1) % imageCount;
+        containers[currentImageIndex].classList.add('active');
+        
+        // Reset animation
+        const img = containers[currentImageIndex].querySelector('.thing-image');
+        img.style.animation = 'none';
+        img.offsetHeight; // Trigger reflow
+        const effectNum = (currentImageIndex % 3) + 1;
+        img.style.animation = `panZoom${effectNum} 8s ease-in-out`;
+    }, imageDuration);
 }
 
 // Start progress bar and auto-advance
@@ -399,6 +522,7 @@ function pause() {
     pauseIcon.style.display = 'none';
     clearTimeout(currentTimeout);
     clearInterval(progressInterval);
+    clearInterval(imageInterval);
     progressFill.style.width = '0%';
 }
 
