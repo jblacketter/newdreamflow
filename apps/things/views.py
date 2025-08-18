@@ -540,13 +540,27 @@ def story_edit(request, pk):
         # Handle thing ordering
         if 'reorder' in request.POST:
             thing_orders = request.POST.getlist('thing_order')
+            story_things_to_update = []
+            
+            # First, collect all the story things that need updating
             for idx, story_thing_id in enumerate(thing_orders):
                 try:
                     story_thing = StoryThing.objects.get(pk=story_thing_id, story=story)
-                    story_thing.order = idx
-                    story_thing.save()
+                    story_thing.order = idx + 1000  # Temporarily offset to avoid conflicts
+                    story_things_to_update.append(story_thing)
                 except StoryThing.DoesNotExist:
                     continue
+            
+            # Bulk update with temporary orders to avoid conflicts
+            if story_things_to_update:
+                StoryThing.objects.bulk_update(story_things_to_update, ['order'])
+                
+                # Now set the actual orders
+                for idx, story_thing in enumerate(story_things_to_update):
+                    story_thing.order = idx
+                
+                # Final bulk update with correct orders
+                StoryThing.objects.bulk_update(story_things_to_update, ['order'])
         
         # Add new things
         if 'add_things' in request.POST:
