@@ -7,6 +7,7 @@ from django.core.paginator import Paginator
 from django.db.models import Q
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
+from django.conf import settings
 from .models import Dream, DreamTag, DreamImage
 from .forms import DreamForm, DreamImageFormSet
 from .services.ai_service import ai_service
@@ -194,11 +195,16 @@ def dream_detail(request, pk):
             messages.error(request, "You don't have permission to view this dream.")
             return redirect('dreams:list')
         elif dream.privacy_level == 'groups':
-            user_groups = request.user.dream_groups.all()
-            dream_groups = dream.shared_with_groups.all()
-            if not any(group in dream_groups for group in user_groups):
+            # Groups are de-scoped in MVP: treat as private if disabled
+            if not getattr(settings, 'FEATURE_GROUPS', False):
                 messages.error(request, "You don't have permission to view this dream.")
                 return redirect('dreams:list')
+            else:
+                user_groups = request.user.dream_groups.all()
+                dream_groups = dream.shared_with_groups.all()
+                if not any(group in dream_groups for group in user_groups):
+                    messages.error(request, "You don't have permission to view this dream.")
+                    return redirect('dreams:list')
     
     # Generate semantic HTML for the description
     semantic_html = None
@@ -344,7 +350,10 @@ def toggle_privacy(request, pk):
     dream = get_object_or_404(Dream, pk=pk, user=request.user)
     
     # Cycle through privacy levels
-    privacy_levels = ['private', 'specific_users', 'groups', 'community']
+    if getattr(settings, 'FEATURE_GROUPS', False):
+        privacy_levels = ['private', 'specific_users', 'groups', 'community']
+    else:
+        privacy_levels = ['private', 'specific_users', 'community']
     current_index = privacy_levels.index(dream.privacy_level)
     new_index = (current_index + 1) % len(privacy_levels)
     dream.privacy_level = privacy_levels[new_index]
@@ -415,6 +424,13 @@ def community_dreams(request):
             'use_algolia': True,
         }
     else:
+        # If Algolia-only is enforced, return 503 rather than falling back to DB
+        if getattr(settings, 'FEATURE_ALGOLIA_ONLY', False):
+            return render(request, 'dreams/community_dreams.html', {
+                'use_algolia': True,
+                'algolia_config': None,
+                'error': 'Search not available'
+            }, status=503)
         # Fallback to database search
         dreams = Dream.objects.filter(privacy_level='community').select_related('user').order_by('-created_at')
         
@@ -458,6 +474,8 @@ def community_search_api(request):
     from .services.search_service import algolia_search
     
     if not algolia_search.enabled:
+        if getattr(settings, 'FEATURE_ALGOLIA_ONLY', False):
+            return JsonResponse({'error': 'Search not available'}, status=503)
         return JsonResponse({'error': 'Search not available'}, status=503)
     
     query = request.GET.get('q', '')

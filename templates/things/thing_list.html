@@ -20,7 +20,7 @@
                         <option value="">All Privacy Levels</option>
                         <option value="private" {% if privacy_filter == 'private' %}selected{% endif %}>Private</option>
                         <option value="specific_users" {% if privacy_filter == 'specific_users' %}selected{% endif %}>Specific Users</option>
-                        <option value="groups" {% if privacy_filter == 'groups' %}selected{% endif %}>Groups</option>
+                        <!-- Groups de-scoped in MVP -->
                         <option value="community" {% if privacy_filter == 'community' %}selected{% endif %}>Community</option>
                     </select>
                 </div>

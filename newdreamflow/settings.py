@@ -56,6 +56,11 @@ ALGOLIA_APP_ID = os.getenv('ALGOLIA_APPLICATION_ID', '')
 if ALGOLIA_APP_ID and ALGOLIA_APP_ID != 'your-algolia-app-id':
     INSTALLED_APPS.append('algoliasearch_django')
 
+# Feature flags
+FEATURE_GROUPS = os.getenv('FEATURE_GROUPS', 'false').lower() == 'true'
+# When true, community views should use Algolia and not fall back to DB
+FEATURE_ALGOLIA_ONLY = os.getenv('FEATURE_ALGOLIA_ONLY', 'false').lower() == 'true'
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
@@ -179,6 +184,9 @@ AUTH_USER_MODEL = 'users.User'
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'dreams:list'
 LOGOUT_REDIRECT_URL = '/'
+
+# Use signed cookie sessions to avoid DB dependency for sessions
+SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'
 
 
 # Algolia Configuration

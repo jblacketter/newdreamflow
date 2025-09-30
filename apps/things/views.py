@@ -7,6 +7,7 @@ from django.core.paginator import Paginator
 from django.db.models import Q, Max
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
+from django.conf import settings
 from .models import Thing, ThingTag, ThingImage, Story, StoryThing
 from .forms import ThingForm, ThingImageFormSet
 from .services.ai_service import ai_service
@@ -203,11 +204,16 @@ def thing_detail(request, pk):
             messages.error(request, "You don't have permission to view this thing.")
             return redirect('things:list')
         elif thing.privacy_level == 'groups':
-            user_groups = request.user.thing_groups.all()
-            thing_groups = thing.shared_with_groups.all()
-            if not any(group in thing_groups for group in user_groups):
+            # Groups are de-scoped: treat as private if disabled
+            if not getattr(settings, 'FEATURE_GROUPS', False):
                 messages.error(request, "You don't have permission to view this thing.")
                 return redirect('things:list')
+            else:
+                user_groups = request.user.thing_groups.all()
+                thing_groups = thing.shared_with_groups.all()
+                if not any(group in thing_groups for group in user_groups):
+                    messages.error(request, "You don't have permission to view this thing.")
+                    return redirect('things:list')
     
     # Generate semantic HTML for the description
     semantic_html = None
@@ -304,7 +310,10 @@ def toggle_privacy(request, pk):
     thing = get_object_or_404(Thing, pk=pk, user=request.user)
     
     # Cycle through privacy levels
-    privacy_levels = ['private', 'specific_users', 'groups', 'community']
+    if getattr(settings, 'FEATURE_GROUPS', False):
+        privacy_levels = ['private', 'specific_users', 'groups', 'community']
+    else:
+        privacy_levels = ['private', 'specific_users', 'community']
     current_index = privacy_levels.index(thing.privacy_level)
     new_index = (current_index + 1) % len(privacy_levels)
     thing.privacy_level = privacy_levels[new_index]
@@ -375,6 +384,13 @@ def community_things(request):
             'use_algolia': True,
         }
     else:
+        # If Algolia-only is enforced, return 503 rather than falling back to DB
+        if getattr(settings, 'FEATURE_ALGOLIA_ONLY', False):
+            return render(request, 'things/community_things.html', {
+                'use_algolia': True,
+                'algolia_config': None,
+                'error': 'Search not available'
+            }, status=503)
         # Fallback to database search
         things = Thing.objects.filter(privacy_level='community').select_related('user').order_by('-created_at')
         
@@ -418,6 +434,8 @@ def community_search_api(request):
     from .services.search_service import algolia_search
     
     if not algolia_search.enabled:
+        if getattr(settings, 'FEATURE_ALGOLIA_ONLY', False):
+            return JsonResponse({'error': 'Search not available'}, status=503)
         return JsonResponse({'error': 'Search not available'}, status=503)
     
     query = request.GET.get('q', '')

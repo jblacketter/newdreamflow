@@ -83,6 +83,12 @@ class ThingForm(forms.ModelForm):
             self.fields['tags'].initial = ', '.join(
                 tag.name for tag in self.instance.tags.all()
             )
+        # Remove 'groups' from privacy choices when groups are disabled
+        from django.conf import settings
+        if not getattr(settings, 'FEATURE_GROUPS', False):
+            self.fields['privacy_level'].choices = [
+                (val, label) for val, label in self.fields['privacy_level'].choices if val != 'groups'
+            ]
 
 
 class EditThingForm(forms.ModelForm):

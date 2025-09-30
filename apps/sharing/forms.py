@@ -40,6 +40,15 @@ class ShareThingForm(forms.Form):
             id=user.id
         ).filter(is_active=True)
         
-        self.fields['shared_with_groups'].queryset = ThingGroup.objects.filter(
-            members=user
-        )
+        # Respect groups feature flag
+        from django.conf import settings
+        if getattr(settings, 'FEATURE_GROUPS', False):
+            self.fields['shared_with_groups'].queryset = ThingGroup.objects.filter(
+                members=user
+            )
+        else:
+            # Hide/disable groups when feature disabled
+            self.fields['shared_with_groups'].queryset = ThingGroup.objects.none()
+            self.fields['privacy_level'].choices = [
+                (val, label) for val, label in self.fields['privacy_level'].choices if val != 'groups'
+            ]
