@@ -10,10 +10,10 @@
         <!-- Profile Picture & Stats -->
         <div class="lg:col-span-1">
             <div class="bg-white rounded-lg shadow p-6 text-center" style="background-color: var(--bg-secondary);">
-                <!-- Dream Face -->
+                <!-- Thing Face -->
                 <div class="mb-4">
-                    {% if user.dream_face %}
-                        <img src="{{ user.dream_face.url }}" alt="{{ user.username }}" 
+                    {% if user.thing_face %}
+                        <img src="{{ user.thing_face.url }}" alt="{{ user.username }}" 
                              class="w-32 h-32 rounded-full mx-auto object-cover">
                     {% else %}
                         <div class="w-32 h-32 rounded-full mx-auto bg-purple-500 flex items-center justify-center text-white text-4xl">
@@ -88,16 +88,16 @@
                         </div>
                     </div>
                     
-                    <!-- Dream Face -->
+                    <!-- Thing Face -->
                     <div class="mb-6">
-                        <label for="{{ form.dream_face.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
-                            Dream Face (Avatar)
+                        <label for="{{ form.thing_face.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                            Thing Face (Avatar)
                         </label>
-                        {{ form.dream_face }}
-                        {% if form.dream_face.errors %}
-                            <p class="mt-1 text-sm text-red-600">{{ form.dream_face.errors.0 }}</p>
+                        {{ form.thing_face }}
+                        {% if form.thing_face.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.thing_face.errors.0 }}</p>
                         {% endif %}
-                        <p class="mt-1 text-xs text-gray-500">This avatar will be shown on your shared dreams.</p>
+                        <p class="mt-1 text-xs text-gray-500">This avatar appears alongside your shared entries.</p>
                     </div>
                     
                     <hr class="my-6">
