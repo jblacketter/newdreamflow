@@ -9,7 +9,7 @@ class CustomUserAdmin(UserAdmin):
     list_filter = ['theme', 'default_privacy', 'is_staff', 'is_active']
     
     fieldsets = UserAdmin.fieldsets + (
-        ('Dream Journal Settings', {
-            'fields': ('dream_face', 'theme', 'background_music', 'music_volume', 'default_privacy')
+        ('Thing Journal Settings', {
+            'fields': ('thing_face', 'theme', 'background_music', 'music_volume', 'default_privacy')
         }),
     )

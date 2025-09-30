@@ -16,8 +16,7 @@ if not User.objects.filter(username='admin').exists():
         email='admin@example.com',
         password='admin123',  # Change this password!
         # Additional fields for the custom User model
-        display_name='Admin User',
-        theme='default'
+        theme='default',
     )
     print("Superuser created successfully!")
     print("Username: admin")
