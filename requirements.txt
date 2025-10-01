@@ -8,6 +8,7 @@ algoliasearch>=4.0
 algoliasearch-django>=3.0
 gunicorn>=21.0
 psycopg2-binary>=2.9
+mysqlclient>=2.2
 whitenoise>=6.5
 dj-database-url>=2.0
 spacy>=3.7.0

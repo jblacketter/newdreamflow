@@ -4,6 +4,90 @@
 
 This guide covers deploying the NewDreamFlow application to Render with PostgreSQL and Algolia search.
 
+## Deployment to PythonAnywhere (Hacker Plan)
+
+These steps assume you are on the $5/month Hacker plan with the default MySQL database and no managed PostgreSQL instance.
+
+### 1. Prep the Repository
+
+1. Push the latest code (including `mysqlclient` in `requirements.txt`) to GitHub or another git host PythonAnywhere can reach.
+2. Confirm `DATABASE_URL` is unset locally so you keep using SQLite during development.
+
+### 2. Clone and Virtualenv on PythonAnywhere
+
+1. Open a Bash console on PythonAnywhere.
+2. Clone the repo: `git clone https://github.com/your-account/newdreamflow.git`.
+3. Create a virtualenv that matches your Python version:
+   ```bash
+   python -m venv ~/.virtualenvs/newdreamflow
+   source ~/.virtualenvs/newdreamflow/bin/activate
+   pip install --upgrade pip
+   pip install -r requirements.txt
+   ```
+
+### 3. Configure the PythonAnywhere Web App
+
+1. In the **Web** tab, create a new Django web app (manual configuration).
+2. Set the virtualenv path to `/home/yourusername/.virtualenvs/newdreamflow`.
+3. Point the source code path to `/home/yourusername/newdreamflow`.
+4. Edit the WSGI file (`/var/www/yourusername_pythonanywhere_com_wsgi.py`):
+   ```python
+   import os
+   import sys
+
+   project_home = '/home/yourusername/newdreamflow'
+   if project_home not in sys.path:
+       sys.path.insert(0, project_home)
+
+   os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'newdreamflow.settings')
+
+   from django.core.wsgi import get_wsgi_application
+   application = get_wsgi_application()
+   ```
+
+### 4. Set Environment Variables
+
+In the **Web** tab → **Environment variables**, add:
+
+```
+DATABASE_URL=mysql://youruser:yourpassword@youruser.mysql.pythonanywhere-services.com/yourdatabase?charset=utf8mb4
+SECRET_KEY=<your production secret>
+DEBUG=false
+ALLOWED_HOSTS=yourusername.pythonanywhere.com
+ALGOLIA_APPLICATION_ID=<optional>
+ALGOLIA_API_KEY=<optional>
+ALGOLIA_SEARCH_API_KEY=<optional>
+OPENAI_API_KEY=<optional>
+FEATURE_ALGOLIA_ONLY=true   # if you want to enforce Algolia search
+```
+
+Replace placeholders with the credentials from the PythonAnywhere **Databases** tab.
+
+### 5. Initialize the App
+
+Back in the Bash console (with the virtualenv activated):
+
+```bash
+python manage.py migrate
+python manage.py collectstatic --noinput
+python manage.py createsuperuser
+
+# Optional: seed Algolia if credentials are set
+python manage.py init_algolia_index
+```
+
+### 6. Configure Static Files and Reload
+
+1. In the **Web** tab, set a static files mapping: URL `/static/` → `/home/yourusername/newdreamflow/staticfiles`.
+2. Click **Reload** on the web app to pick up code and environment changes.
+
+### 7. Verify
+
+1. Visit `https://yourusername.pythonanywhere.com`.
+2. Log in with the superuser from step 5.
+3. Create a test thing and confirm it appears.
+4. If Algolia is configured, hit the community search view to ensure queries succeed.
+
 ## Prerequisites
 
 - GitHub account with the repository
