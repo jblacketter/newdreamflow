@@ -12,14 +12,15 @@ These steps assume you are on the $5/month Hacker plan with the default MySQL da
 
 1. Push the latest code (including `mysqlclient` in `requirements.txt`) to GitHub or another git host PythonAnywhere can reach.
 2. Confirm `DATABASE_URL` is unset locally so you keep using SQLite during development.
+3. Double-check that the Python version in `runtime.txt` is supported by both Render and PythonAnywhere. The repo defaults to Python 3.11.9; if your PythonAnywhere plan only offers a different version, update `runtime.txt` and rebuild on Render so both environments stay aligned.
 
 ### 2. Clone and Virtualenv on PythonAnywhere
 
 1. Open a Bash console on PythonAnywhere.
 2. Clone the repo: `git clone https://github.com/your-account/newdreamflow.git`.
-3. Create a virtualenv that matches your Python version:
+3. Create a virtualenv that matches the Python version you picked above:
    ```bash
-   python -m venv ~/.virtualenvs/newdreamflow
+   python3.11 -m venv ~/.virtualenvs/newdreamflow
    source ~/.virtualenvs/newdreamflow/bin/activate
    pip install --upgrade pip
    pip install -r requirements.txt
@@ -47,34 +48,26 @@ These steps assume you are on the $5/month Hacker plan with the default MySQL da
 
 ### 4. Set Environment Variables
 
-In the **Web** tab → **Environment variables**, add:
+In the **Web** tab → **Environment variables**, add the following key/value pairs. Use the credentials from the PythonAnywhere **Databases** tab and keep everything lowercase (PythonAnywhere treats keys as case sensitive):
 
-```
-DATABASE_URL=mysql://youruser:yourpassword@youruser.mysql.pythonanywhere-services.com/yourdatabase?charset=utf8mb4
-SECRET_KEY=<your production secret>
-DEBUG=false
-ALLOWED_HOSTS=yourusername.pythonanywhere.com
-ALGOLIA_APPLICATION_ID=<optional>
-ALGOLIA_API_KEY=<optional>
-ALGOLIA_SEARCH_API_KEY=<optional>
-OPENAI_API_KEY=<optional>
-FEATURE_ALGOLIA_ONLY=true   # if you want to enforce Algolia search
-```
+- `DATABASE_URL`: `mysql://<db_user>:<db_password>@<db_user>.mysql.pythonanywhere-services.com/<db_name>?charset=utf8mb4`
+- `SECRET_KEY`: fresh random string (use `python -c 'import secrets; print(secrets.token_urlsafe(50))'`)
+- `DEBUG`: `false`
+- `ALLOWED_HOSTS`: `yourusername.pythonanywhere.com`
+- `FEATURE_ALGOLIA_ONLY`: `true` if you want to force Algolia
+- Optional `ALGOLIA_APPLICATION_ID`, `ALGOLIA_API_KEY`, `ALGOLIA_SEARCH_API_KEY`, `OPENAI_API_KEY`
 
-Replace placeholders with the credentials from the PythonAnywhere **Databases** tab.
+Tip: keep a local `.env.pythonanywhere` text file with the same keys so you can paste values quickly, but never commit it to git.
 
 ### 5. Initialize the App
 
-Back in the Bash console (with the virtualenv activated):
+In your Bash console (with the virtualenv activated) run the bootstrap script below. It wraps the standard Django commands and prints progress so you can spot issues quickly.
 
 ```bash
-python manage.py migrate
-python manage.py collectstatic --noinput
-python manage.py createsuperuser
-
-# Optional: seed Algolia if credentials are set
-python manage.py init_algolia_index
+./scripts/pythonanywhere_bootstrap.sh
 ```
+
+The script runs migrations, collects static files, prompts for a superuser, and seeds Algolia if the keys are present.
 
 ### 6. Configure Static Files and Reload
 
@@ -83,10 +76,13 @@ python manage.py init_algolia_index
 
 ### 7. Verify
 
-1. Visit `https://yourusername.pythonanywhere.com`.
+Run through this quick smoke test after every deploy:
+
+1. Visit `https://yourusername.pythonanywhere.com` (incognito window recommended).
 2. Log in with the superuser from step 5.
-3. Create a test thing and confirm it appears.
-4. If Algolia is configured, hit the community search view to ensure queries succeed.
+3. Create a dream entry and confirm it shows up immediately in the list view.
+4. If Algolia is configured, search for the new dream from the community page; fall back to the database view if `FEATURE_ALGOLIA_ONLY` is `false`.
+5. Browse a few static assets (CSS, images) and check your browser network tab for 200 responses to `/static/...`.
 
 ## Prerequisites
 
