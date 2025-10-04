@@ -12,3 +12,4 @@ mysqlclient>=2.2
 whitenoise>=6.5
 dj-database-url>=2.0
 spacy>=3.7.0
+semantic_bit
